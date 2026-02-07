@@ -1,7 +1,7 @@
 {
-  "name": "ventsmart-gateway",
+  "name": "goldilocks-gateway",
   "version": "1.0.0",
-  "description": "Arduino USB serial gateway for VentSmart",
+  "description": "Arduino USB serial gateway for Goldilocks",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

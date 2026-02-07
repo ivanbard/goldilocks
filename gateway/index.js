@@ -1,5 +1,5 @@
 /**
- * VentSmart Gateway — reads Arduino serial output, posts to backend API
+ * Goldilocks Gateway — reads Arduino serial output, posts to backend API
  * 
  * Arduino output format: T=<temp>,P=<pressure>,Tbaro=<baroTemp>
  * Optional future: T=<temp>,P=<pressure>,Tbaro=<baroTemp>,H=<humidity>
@@ -118,7 +118,7 @@ async function listPorts() {
 // ============================================================
 
 async function main() {
-  console.log('VentSmart Gateway starting...');
+  console.log('Goldilocks Gateway starting...');
   console.log(`Serial: ${SERIAL_PORT} @ ${SERIAL_BAUD} baud`);
   console.log(`Backend: ${BACKEND_URL}`);
   console.log(`Device ID: ${DEVICE_ID}`);

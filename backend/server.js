@@ -305,13 +305,13 @@ app.post('/api/user/preferences', (req, res) => {
 
     const {
       plan_type, comfort_min, comfort_max,
-      room_kwh_per_degC, ac_cop, postal_code,
+      room_kwh_per_degC, ac_cop, postal_code, heating_source,
       housing_type, floor_level, lifestyle_notes,
       notification_preferences_json, quiet_hours_start, quiet_hours_end,
     } = req.body;
 
     // Update users table
-    if (plan_type || comfort_min || comfort_max || room_kwh_per_degC || ac_cop || postal_code) {
+    if (plan_type || comfort_min || comfort_max || room_kwh_per_degC || ac_cop || postal_code || heating_source) {
       db.prepare(`
         UPDATE users SET
           plan_type = COALESCE(?, plan_type),
@@ -319,9 +319,10 @@ app.post('/api/user/preferences', (req, res) => {
           comfort_max = COALESCE(?, comfort_max),
           room_kwh_per_degC = COALESCE(?, room_kwh_per_degC),
           ac_cop = COALESCE(?, ac_cop),
-          postal_code = COALESCE(?, postal_code)
+          postal_code = COALESCE(?, postal_code),
+          heating_source = COALESCE(?, heating_source)
         WHERE id = ?
-      `).run(plan_type, comfort_min, comfort_max, room_kwh_per_degC, ac_cop, postal_code, user.id);
+      `).run(plan_type, comfort_min, comfort_max, room_kwh_per_degC, ac_cop, postal_code, heating_source, user.id);
     }
 
     // Update profile table
@@ -590,5 +591,5 @@ app.post('/api/suggestions/generate', async (req, res) => {
 // Start server
 // ============================================================
 app.listen(PORT, () => {
-  console.log(`VentSmart backend listening on http://localhost:${PORT}`);
+  console.log(`Goldilocks backend listening on http://localhost:${PORT}`);
 });

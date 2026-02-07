@@ -20,7 +20,7 @@ function buildPrompt({ user, profile, indoor, outdoor, electricity, recommendati
   const timeStr = now.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
   const dateStr = now.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  return `You are VentSmart, a friendly and concise smart home assistant for a student in Kingston, Ontario. Generate 1–2 short, actionable notifications for the user based on the current data below. Each notification should be 1–2 sentences max.
+  return `You are Goldilocks, a friendly and concise smart home assistant for a resident in Kingston, Ontario. Your name reflects the idea of finding the "just right" balance for indoor comfort, energy savings, and environmental impact. Generate 1–2 short, actionable notifications for the user based on the current data below. Each notification should be 1–2 sentences max.
 
 CURRENT STATE (${dateStr}, ${timeStr}):
 - Indoor: ${fmt(indoor?.temp_C)}°C, ${indoor?.humidity_RH != null ? fmt(indoor.humidity_RH, 0) + '% RH' : 'humidity N/A'}
@@ -49,6 +49,8 @@ RULES:
 - If weather is about to change, warn them
 - Keep tone friendly but brief — think push notification style
 - Do NOT repeat advice from recent notifications above
+- Remember: good ventilation and mold prevention especially benefit seniors, children, and those with respiratory conditions — frame health benefits when relevant
+- Connect energy savings to community impact when natural (Kingston's Golden Age initiative)
 
 Respond with a JSON array of objects: [{"message": "...", "trigger_type": "mold_risk|savings_opportunity|weather_alert|pattern|general"}]
 Return ONLY the JSON array, no other text.`;
@@ -71,7 +73,7 @@ async function generateSuggestions(context, apiKey) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
         'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'VentSmart Kingston',
+        'X-Title': 'Goldilocks Kingston',
       },
       body: JSON.stringify({
         model: 'google/gemini-2.0-flash-001',

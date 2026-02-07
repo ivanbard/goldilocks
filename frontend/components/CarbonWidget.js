@@ -41,7 +41,7 @@ export default function CarbonWidget() {
         <div className="mt-3 pt-3 border-t border-emerald-100">
           <p className="text-xs text-emerald-600">
             <span className="font-medium">🏘️ Kingston projection:</span> {community.toLocaleString()} tonnes CO₂/year 
-            if all households adopted VentSmart
+            if all households adopted Goldilocks
           </p>
         </div>
       )}

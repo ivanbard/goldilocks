@@ -15,6 +15,7 @@ export default function SettingsPage() {
     lifestyle_notes: '',
     quiet_hours_start: '22:00',
     quiet_hours_end: '07:00',
+    heating_source: 'gas',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -35,6 +36,7 @@ export default function SettingsPage() {
         lifestyle_notes: user.profile?.lifestyle_notes || prev.lifestyle_notes,
         quiet_hours_start: user.profile?.quiet_hours_start || prev.quiet_hours_start,
         quiet_hours_end: user.profile?.quiet_hours_end || prev.quiet_hours_end,
+        heating_source: user.heating_source || prev.heating_source,
       }));
     }
   }, [user]);
@@ -174,6 +176,28 @@ export default function SettingsPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
+          </div>
+
+          {/* Heating Source */}
+          <div>
+            <label className="text-sm text-gray-600 block mb-1">Heating Source</label>
+            <div className="grid grid-cols-3 gap-2">
+              {[{ val: 'gas', icon: '🔥', label: 'Natural Gas' }, { val: 'electric', icon: '⚡', label: 'Electric' }, { val: 'heatpump', icon: '❄️', label: 'Heat Pump' }].map(({ val, icon, label }) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => handleChange('heating_source', val)}
+                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    form.heating_source === val
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  }`}
+                >
+                  {icon} {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Affects carbon emissions calculations. Most Kingston homes use natural gas.</p>
           </div>
           <div>
             <label className="text-sm text-gray-600 block mb-1">Postal Code</label>

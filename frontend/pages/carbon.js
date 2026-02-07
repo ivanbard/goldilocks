@@ -163,7 +163,7 @@ export default function CarbonPage() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-gray-400 text-center py-8">No data yet — keep using VentSmart!</p>
+          <p className="text-gray-400 text-center py-8">No data yet — keep using Goldilocks!</p>
         )}
       </div>
 
@@ -195,7 +195,7 @@ export default function CarbonPage() {
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Kingston Community Impact</h3>
             <p className="text-sm text-gray-500">
-              If all {community.kingston_households?.toLocaleString()} households adopted VentSmart
+              If all {community.kingston_households?.toLocaleString()} households adopted Goldilocks
             </p>
           </div>
         </div>
@@ -240,6 +240,48 @@ export default function CarbonPage() {
           Community projections based on Kingston CMA ~{community.kingston_households?.toLocaleString()} households 
           averaging {5} tonnes CO₂/year for residential heating. Data sourced from NRCan, 
           Environment Canada, and the City of Kingston Community Energy Plan.
+        </p>
+      </div>
+
+      {/* Health & Accessibility Impact */}
+      <div className="rounded-xl border-2 border-blue-200 bg-blue-50/50 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-2xl">🏥</span>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Health &amp; Accessibility Impact</h3>
+            <p className="text-sm text-gray-500">Why smart ventilation matters for every generation</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <span className="text-2xl">👴</span>
+            <h4 className="font-medium text-gray-800 mt-2">Seniors</h4>
+            <p className="text-sm text-gray-500 mt-1">
+              Mold and poor air quality disproportionately affect older adults with respiratory conditions. 
+              Smart ventilation reduces hospital visits and improves quality of life.
+            </p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <span className="text-2xl">👶</span>
+            <h4 className="font-medium text-gray-800 mt-2">Children</h4>
+            <p className="text-sm text-gray-500 mt-1">
+              Children breathe 50% more air per kg of body weight than adults. 
+              Reducing indoor mold and CO₂ buildup protects developing lungs.
+            </p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <span className="text-2xl">💰</span>
+            <h4 className="font-medium text-gray-800 mt-2">Low-Income Households</h4>
+            <p className="text-sm text-gray-500 mt-1">
+              Energy poverty affects 1 in 5 Canadian households. Goldilocks helps reduce 
+              heating costs while maintaining healthy indoor environments.
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-gray-400 mt-4">
+          Kingston&apos;s Golden Age initiative recognizes that sustainable cities must work for everyone — 
+          from the youngest to the oldest residents. Goldilocks bridges the gap between 
+          environmental responsibility and accessible, healthy living.
         </p>
       </div>
     </div>

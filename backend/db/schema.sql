@@ -1,4 +1,4 @@
--- VentSmart Kingston Database Schema
+-- Goldilocks Kingston Database Schema
 
 -- Users table (PRD Section 12 + extended for LLM personalization)
 CREATE TABLE IF NOT EXISTS users (

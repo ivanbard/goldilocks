@@ -1,5 +1,5 @@
 /**
- * Carbon Emissions Estimator for VentSmart Kingston
+ * Carbon Emissions Estimator for Goldilocks Kingston
  * 
  * Calculates CO2 emissions avoided by using smart ventilation
  * instead of HVAC (heating/cooling).
@@ -41,7 +41,7 @@ const AVG_HOME_CO2_TONNES_YEAR = 5.0; // Average Kingston home heating CO2
 /**
  * Calculate CO2 saved from a single ventilation decision
  * 
- * When VentSmart recommends opening a window instead of running HVAC,
+ * When Goldilocks recommends opening a window instead of running HVAC,
  * the avoided emissions depend on the heating source.
  * 
  * @param {Object} params
@@ -108,7 +108,7 @@ function getEquivalences(co2_g) {
 }
 
 /**
- * Project long-term community impact if all Kingston households used VentSmart
+ * Project long-term community impact if all Kingston households used Goldilocks
  * 
  * @param {Object} params
  * @param {number} params.user_co2_saved_g - This user's CO2 saved so far in grams

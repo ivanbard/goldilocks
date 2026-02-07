@@ -1,7 +1,7 @@
 {
-  "name": "ventsmart-kingston",
+  "name": "goldilocks-kingston",
   "version": "1.0.0",
-  "description": "VentSmart Kingston — Arduino + Web App for Ventilation, Cost Savings, and Mold Risk",
+  "description": "Goldilocks Kingston — Arduino + Web App for finding the 'just right' balance of ventilation, cost savings, and environmental impact",
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",

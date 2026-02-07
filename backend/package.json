@@ -1,7 +1,7 @@
 {
-  "name": "ventsmart-backend",
+  "name": "goldilocks-backend",
   "version": "1.0.0",
-  "description": "VentSmart Kingston backend API",
+  "description": "Goldilocks Kingston backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
