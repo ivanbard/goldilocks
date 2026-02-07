@@ -13,6 +13,7 @@ const { estimateIndoorHumidity } = require('./logic/humidityEstimator');
 const { calculateAvoidedCO2, getEquivalences, getCommunityImpact, getGenerationalProjection, dailyCarbonSavings } = require('./logic/carbonEstimator');
 const { chat: geminiChat, resetChat } = require('./logic/geminiChat');
 const demoSimulator = require('./logic/demoSimulator');
+const conditionMonitor = require('./logic/conditionMonitor');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
@@ -740,4 +741,7 @@ app.listen(PORT, () => {
   if (process.env.DEMO_MODE === 'true') {
     demoSimulator.start();
   }
+
+  // Auto-notifications: monitor conditions and alert the user
+  conditionMonitor.start();
 });
