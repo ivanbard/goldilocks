@@ -54,4 +54,12 @@ export async function markNotificationRead(id) {
   return res.json();
 }
 
+export async function generateSuggestions() {
+  const res = await fetch(`${API_URL}/api/suggestions/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return res.json();
+}
+
 export { API_URL };

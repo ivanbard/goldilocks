@@ -8,6 +8,7 @@ const { fetchWeather, isRainExpected } = require('./logic/weather');
 const { getRecommendation, getRecommendationText } = require('./logic/recommendation');
 const { estimateCost, calculatePeriodSavings } = require('./logic/costSavings');
 const { computeMoldRisk } = require('./logic/moldRisk');
+const { generateSuggestions } = require('./logic/llmSuggestions');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
@@ -380,6 +381,121 @@ app.get('/api/electricity/schedule', (req, res) => {
     const planType = req.query.plan || user?.plan_type || 'TOU';
     res.json(getFullSchedule(planType));
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- POST /api/suggestions/generate — Generate LLM-powered suggestions ---
+app.post('/api/suggestions/generate', async (req, res) => {
+  try {
+    const apiKey = process.env.OPENROUTER_API;
+    if (!apiKey || apiKey === 'your_openrouter_api_key_here') {
+      return res.status(400).json({ error: 'OpenRouter API key not configured in .env' });
+    }
+
+    const user = db.prepare('SELECT * FROM users LIMIT 1').get();
+    if (!user) return res.status(404).json({ error: 'No user found' });
+
+    const profile = db.prepare('SELECT * FROM user_profile WHERE user_id = ?').get(user.id);
+    const device = db.prepare('SELECT * FROM devices WHERE user_id = ?').get(user.id);
+    const deviceId = device ? device.device_id : 'demo-device-001';
+
+    // Get latest reading
+    const latestReading = db.prepare(
+      'SELECT * FROM readings WHERE device_id = ? ORDER BY ts DESC LIMIT 1'
+    ).get(deviceId);
+
+    // Last 24h readings for mold risk
+    const last24h = db.prepare(`
+      SELECT * FROM readings
+      WHERE device_id = ? AND ts >= datetime('now', '-24 hours')
+      ORDER BY ts ASC
+    `).all(deviceId);
+
+    // Weather, rate, indoor values
+    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY);
+    const rate = getCurrentRate(user.plan_type);
+    const Tin = latestReading ? latestReading.temp_C : 21;
+    const RHin = latestReading ? latestReading.humidity_RH : null;
+    const Tout = weather.current.temp_C;
+    const RHout = weather.current.humidity_RH;
+    const moldRisk = computeMoldRisk(last24h, 1);
+    const target = (user.comfort_min + user.comfort_max) / 2;
+
+    const recommendation = getRecommendation({
+      Tin, RHin, Tout, RHout,
+      comfort_min: user.comfort_min, comfort_max: user.comfort_max,
+      price_cents_per_kWh: rate.price_cents_per_kWh,
+      periodLabel: rate.periodLabel,
+      forecast: weather.forecast,
+      moldRiskLevel: moldRisk.risk_level,
+    });
+
+    const costEstimate = estimateCost({
+      Tin, target,
+      price_cents_per_kWh: rate.price_cents_per_kWh,
+      kWh_per_degC: user.room_kwh_per_degC,
+      ac_cop: user.ac_cop,
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const todaySavings = db.prepare(
+      'SELECT * FROM daily_summary WHERE user_id = ? AND date = ?'
+    ).get(user.id, today);
+
+    // Recent notifications to avoid repetition
+    const recentNotifications = db.prepare(`
+      SELECT * FROM notifications WHERE user_id = ? ORDER BY ts DESC LIMIT 5
+    `).all(user.id);
+
+    // Generate via LLM
+    const result = await generateSuggestions({
+      user, profile,
+      indoor: { temp_C: Tin, humidity_RH: RHin },
+      outdoor: weather.current,
+      electricity: rate,
+      recommendation: { ...recommendation, text: getRecommendationText(recommendation.state) },
+      moldRisk,
+      costEstimate,
+      recentNotifications,
+      todaySavings,
+    }, apiKey);
+
+    // Store suggestions as notifications + log LLM call
+    const insertNotif = db.prepare(`
+      INSERT INTO notifications (user_id, message_text, trigger_type, llm_prompt_summary)
+      VALUES (?, ?, ?, ?)
+    `);
+    const insertLog = db.prepare(`
+      INSERT INTO llm_logs (user_id, prompt_hash, context_summary, response_text, model_used, tokens_used, notification_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const stored = [];
+    for (const s of result.suggestions) {
+      const notifResult = insertNotif.run(user.id, s.message, s.trigger_type, result.prompt_summary || '');
+      const notifId = notifResult.lastInsertRowid;
+      insertLog.run(
+        user.id,
+        null,
+        result.prompt_summary || '',
+        JSON.stringify(result.suggestions),
+        result.model || 'unknown',
+        result.tokens_used || 0,
+        notifId
+      );
+      stored.push({ id: notifId, message: s.message, trigger_type: s.trigger_type });
+    }
+
+    res.json({
+      success: true,
+      suggestions: stored,
+      model: result.model,
+      tokens_used: result.tokens_used,
+      error: result.error || null,
+    });
+  } catch (err) {
+    console.error('POST /api/suggestions/generate error:', err);
     res.status(500).json({ error: err.message });
   }
 });

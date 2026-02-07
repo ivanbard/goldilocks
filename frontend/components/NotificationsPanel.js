@@ -1,4 +1,4 @@
-import { useNotifications, markNotificationRead } from '../lib/api';
+import { useNotifications, markNotificationRead, generateSuggestions } from '../lib/api';
 import { useState } from 'react';
 
 const TRIGGER_ICONS = {
@@ -12,11 +12,27 @@ const TRIGGER_ICONS = {
 export default function NotificationsPanel() {
   const { data: notifications, mutate } = useNotifications();
   const [expanded, setExpanded] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [llmError, setLlmError] = useState(null);
 
-  if (!notifications || notifications.length === 0) return null;
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setLlmError(null);
+    try {
+      const result = await generateSuggestions();
+      if (result.error) {
+        setLlmError(result.error);
+      }
+      mutate(); // refresh notifications list
+    } catch (err) {
+      setLlmError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
 
-  const unread = notifications.filter((n) => !n.read_at);
-  const display = expanded ? notifications : notifications.slice(0, 3);
+  const unread = (notifications || []).filter((n) => !n.read_at);
+  const display = expanded ? (notifications || []) : (notifications || []).slice(0, 5);
 
   const handleMarkRead = async (id) => {
     await markNotificationRead(id);
@@ -27,18 +43,36 @@ export default function NotificationsPanel() {
     <div className="card">
       <div className="flex items-center justify-between mb-3">
         <h3 className="card-title mb-0">
-          Notifications
+          Smart Suggestions
           {unread.length > 0 && (
             <span className="badge badge-red ml-2">{unread.length} new</span>
           )}
         </h3>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-blue-500 hover:text-blue-700"
-        >
-          {expanded ? 'Show less' : 'Show all'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+          >
+            {generating ? (
+              <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Thinking...</>
+            ) : (
+              <><span>✨</span> Get AI Tips</>
+            )}
+          </button>
+          {(notifications || []).length > 3 && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs text-blue-500 hover:text-blue-700"
+            >
+              {expanded ? 'Show less' : 'Show all'}
+            </button>
+          )}
+        </div>
       </div>
+      {llmError && (
+        <p className="text-xs text-red-500 mb-2">⚠️ {llmError}</p>
+      )}
       <div className="space-y-2">
         {display.map((n) => (
           <div

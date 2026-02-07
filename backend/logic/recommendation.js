@@ -30,6 +30,13 @@ function getRecommendation({
   forecast = [],
   moldRiskLevel = 'LOW',
 }) {
+  // Ensure numeric safety
+  Tin = typeof Tin === 'number' && !isNaN(Tin) ? Tin : 21;
+  Tout = typeof Tout === 'number' && !isNaN(Tout) ? Tout : 10;
+  RHin = (typeof RHin === 'number' && !isNaN(RHin)) ? RHin : null;
+  RHout = (typeof RHout === 'number' && !isNaN(RHout)) ? RHout : null;
+  price_cents_per_kWh = typeof price_cents_per_kWh === 'number' ? price_cents_per_kWh : 10;
+
   const reasons = [];
   const target = (comfort_min + comfort_max) / 2;
   const isComfortable = Tin >= comfort_min && Tin <= comfort_max;
