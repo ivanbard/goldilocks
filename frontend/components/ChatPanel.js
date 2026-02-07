@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { sendChatMessage, resetChatSession } from '../lib/api';
 
 const SUGGESTIONS = [
@@ -9,6 +9,24 @@ const SUGGESTIONS = [
   'How does Goldilocks help Kingston?',
 ];
 
+/* ── helpers ─────────────────────────────────────────── */
+
+/** Strip markdown / emoji so TTS reads cleanly */
+function cleanForSpeech(text) {
+  return text
+    .replace(/[#*_~`>]/g, '')           // markdown symbols
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [link](url) → link
+    .replace(/\p{Emoji_Presentation}/gu, '') // emoji
+    .replace(/\s{2,}/g, ' ')            // collapse whitespace
+    .trim();
+}
+
+/** Check browser support for SpeechRecognition */
+function getSpeechRecognition() {
+  if (typeof window === 'undefined') return null;
+  return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+}
+
 export default function ChatPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -16,8 +34,21 @@ export default function ChatPanel() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+
+  /* ── voice state ──────────────────────────────────── */
+  const [isListening, setIsListening] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  /* ── detect browser speech support on mount ───────── */
+  useEffect(() => {
+    setSpeechSupported(!!getSpeechRecognition() && typeof window !== 'undefined' && !!window.speechSynthesis);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -26,6 +57,29 @@ export default function ChatPanel() {
   useEffect(() => {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
+
+  /* ── TTS: speak assistant replies ─────────────────── */
+  const speak = useCallback((text) => {
+    if (!voiceEnabled || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();          // stop any in-progress speech
+    const clean = cleanForSpeech(text);
+    if (!clean) return;
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.rate = 1.05;
+    utter.pitch = 1.0;
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onend   = () => setIsSpeaking(false);
+    utter.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utter);
+  }, [voiceEnabled]);
+
+  /* ── stop TTS when voice disabled or panel closed ── */
+  useEffect(() => {
+    if (!voiceEnabled || !isOpen) {
+      window.speechSynthesis?.cancel();
+      setIsSpeaking(false);
+    }
+  }, [voiceEnabled, isOpen]);
 
   const handleSend = async (text) => {
     const msg = text || input.trim();
@@ -37,12 +91,14 @@ export default function ChatPanel() {
 
     try {
       const res = await sendChatMessage(msg);
+      const reply = res.reply || 'Sorry, I couldn\'t generate a response.';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        text: res.reply || 'Sorry, I couldn\'t generate a response.',
+        text: reply,
         model: res.model,
         tokens: res.tokens_used,
       }]);
+      speak(reply);                           // 🔊 auto-speak
     } catch (err) {
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -55,6 +111,8 @@ export default function ChatPanel() {
   };
 
   const handleReset = async () => {
+    window.speechSynthesis?.cancel();
+    setIsSpeaking(false);
     await resetChatSession();
     setMessages([
       { role: 'assistant', text: 'Chat reset! 🐻 What would you like to know?' },
@@ -67,6 +125,59 @@ export default function ChatPanel() {
       handleSend();
     }
   };
+
+  /* ── Speech Recognition ───────────────────────────── */
+  const startListening = useCallback(() => {
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-CA';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setInput('');                       // clear any leftover text
+      handleSend(transcript);             // send immediately
+    };
+
+    recognition.onerror = (event) => {
+      console.warn('Speech recognition error:', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, []);   // handleSend is stable enough via closure
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) stopListening();
+    else startListening();
+  }, [isListening, startListening, stopListening]);
+
+  /* ── cleanup on unmount ───────────────────────────── */
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
 
   if (!isOpen) {
     return (
@@ -88,10 +199,27 @@ export default function ChatPanel() {
           <span className="text-xl">🐻</span>
           <div>
             <h3 className="text-white font-semibold text-sm">Goldilocks</h3>
-            <p className="text-amber-100 text-xs">Powered by Google Gemini</p>
+            <p className="text-amber-100 text-xs">
+              Powered by Google Gemini
+              {isSpeaking && <span className="ml-1 animate-pulse">🔊</span>}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {/* Voice toggle */}
+          {speechSupported && (
+            <button
+              onClick={() => setVoiceEnabled(v => !v)}
+              className={`text-xs px-2 py-1 rounded transition-colors ${
+                voiceEnabled
+                  ? 'text-white bg-amber-600/50 hover:bg-amber-600/70'
+                  : 'text-amber-200 hover:text-white hover:bg-amber-600/50'
+              }`}
+              title={voiceEnabled ? 'Disable voice replies' : 'Enable voice replies'}
+            >
+              {voiceEnabled ? '🔊' : '🔇'}
+            </button>
+          )}
           <button
             onClick={handleReset}
             className="text-amber-100 hover:text-white text-xs px-2 py-1 rounded hover:bg-amber-600/50 transition-colors"
@@ -168,10 +296,27 @@ export default function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask Goldilocks anything..."
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-            disabled={loading}
+            placeholder={isListening ? '🎙️ Listening...' : 'Ask Goldilocks anything...'}
+            className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-colors ${
+              isListening ? 'border-red-400 bg-red-50' : 'border-gray-300'
+            }`}
+            disabled={loading || isListening}
           />
+          {/* Mic button */}
+          {speechSupported && (
+            <button
+              onClick={toggleListening}
+              disabled={loading}
+              className={`w-10 h-10 flex items-center justify-center rounded-lg text-sm transition-all ${
+                isListening
+                  ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-300'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+              } disabled:opacity-40 disabled:cursor-not-allowed`}
+              title={isListening ? 'Stop listening' : 'Voice input'}
+            >
+              🎤
+            </button>
+          )}
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || loading}
