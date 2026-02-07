@@ -57,14 +57,18 @@ async function sendAggregatedReading() {
   const avg = {
     temp_C: 0,
     humidity_RH: null,
-    pressure_hPa: 0,
+    pressure_hPa: null,
   };
 
   let humidityCount = 0;
+  let pressureCount = 0;
 
   for (const r of readingBuffer) {
     if (r.temp_C !== null) avg.temp_C += r.temp_C;
-    if (r.pressure_hPa !== null) avg.pressure_hPa += r.pressure_hPa;
+    if (r.pressure_hPa !== null && r.pressure_hPa > 0) {
+      avg.pressure_hPa = (avg.pressure_hPa || 0) + r.pressure_hPa;
+      pressureCount++;
+    }
     if (r.humidity_RH !== null) {
       avg.humidity_RH = (avg.humidity_RH || 0) + r.humidity_RH;
       humidityCount++;
@@ -72,7 +76,9 @@ async function sendAggregatedReading() {
   }
 
   avg.temp_C = Math.round((avg.temp_C / count) * 100) / 100;
-  avg.pressure_hPa = Math.round((avg.pressure_hPa / count) * 100) / 100;
+  if (pressureCount > 0) {
+    avg.pressure_hPa = Math.round((avg.pressure_hPa / pressureCount) * 100) / 100;
+  }
   if (humidityCount > 0) {
     avg.humidity_RH = Math.round((avg.humidity_RH / humidityCount) * 100) / 100;
   }
