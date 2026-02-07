@@ -40,7 +40,12 @@ function initSchema() {
       VALUES ('demo-device-001', ?, 'Main Room')
     `).run(userId);
 
-    console.log('Seeded demo user (id=' + userId + ') + device');
+    db.prepare(`
+      INSERT OR IGNORE INTO devices (device_id, user_id, location_name)
+      VALUES ('esp32-sensor-001', ?, 'Main Room')
+    `).run(userId);
+
+    console.log('Seeded demo user (id=' + userId + ') + devices');
   }
 
   // Migration: add co2_saved_g column if missing

@@ -109,8 +109,14 @@ app.get('/api/dashboard', async (req, res) => {
     // Get user profile
     const profile = db.prepare('SELECT * FROM user_profile WHERE user_id = ?').get(user.id);
 
-    // Get device
-    const device = db.prepare('SELECT * FROM devices WHERE user_id = ?').get(user.id);
+    // Get device — pick whichever has the most recent reading
+    const device = db.prepare(`
+      SELECT d.device_id FROM devices d
+      LEFT JOIN readings r ON r.device_id = d.device_id
+      WHERE d.user_id = ?
+      ORDER BY r.ts DESC
+      LIMIT 1
+    `).get(user.id);
     const deviceId = device ? device.device_id : 'demo-device-001';
 
     // Latest reading
