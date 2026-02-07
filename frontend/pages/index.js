@@ -36,7 +36,7 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const { indoor, outdoor, electricity, recommendation, costEstimate, moldRisk, todaySavings, weather, furnaceFilterReminder } = data;
+  const { indoor, outdoor, electricity, recommendation, costEstimate, moldRisk, todaySavings, weather, furnaceFilterReminder, deviceId } = data;
 
   return (
     <div className="space-y-6">
@@ -71,7 +71,7 @@ export default function Dashboard() {
       <CarbonWidget />
 
       {/* Humidity timeline chart */}
-      <HumidityTimeline deviceId="demo-device-001" />
+      <HumidityTimeline deviceId={deviceId} />
 
       {/* Forecast preview */}
       {weather && weather.forecast && weather.forecast.length > 0 && (

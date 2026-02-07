@@ -262,6 +262,7 @@ app.get('/api/dashboard', async (req, res) => {
       moldRisk,
       todaySavings: todaySummary || { dollars_saved_est: 0, kwh_saved_est: 0 },
       readingsCount24h: last24h.length,
+      deviceId,
     });
   } catch (err) {
     console.error('GET /api/dashboard error:', err);
