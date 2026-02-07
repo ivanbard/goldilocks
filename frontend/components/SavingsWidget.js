@@ -23,12 +23,12 @@ export default function SavingsWidget({ costEstimate, todaySavings }) {
             <span className="text-lg">🪟</span>
             <span className="text-sm text-gray-600">Window cost</span>
           </div>
-          <span className="text-lg font-semibold text-green-600">$0.00</span>
+          <span className="text-lg font-semibold" style={{ color: 'var(--color-success-text-bold)' }}>$0.00</span>
         </div>
         <hr className="border-gray-100" />
-        <div className="flex items-center justify-between bg-green-50 rounded-lg p-3 -mx-1">
-          <span className="text-sm font-medium text-green-700">💰 Potential savings</span>
-          <span className="text-xl font-bold text-green-600">${savings.toFixed(4)}</span>
+        <div className="flex items-center justify-between rounded-lg p-3 -mx-1" style={{ backgroundColor: 'var(--color-success-bg)' }}>
+          <span className="text-sm font-medium" style={{ color: 'var(--color-success-text)' }}>💰 Potential savings</span>
+          <span className="text-xl font-bold" style={{ color: 'var(--color-success-text-bold)' }}>${savings.toFixed(4)}</span>
         </div>
 
         {todaySavings && (

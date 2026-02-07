@@ -1,19 +1,14 @@
 import { useState } from 'react';
-
-const STATE_STYLES = {
-  OPEN_WINDOW: { bg: 'bg-green-50 border-green-200', icon: '🪟', color: 'text-green-700' },
-  USE_AC: { bg: 'bg-blue-50 border-blue-200', icon: '❄️', color: 'text-blue-700' },
-  USE_HEAT: { bg: 'bg-orange-50 border-orange-200', icon: '🔥', color: 'text-orange-700' },
-  DO_NOTHING: { bg: 'bg-gray-50 border-gray-200', icon: '✅', color: 'text-gray-700' },
-};
+import { useColorblindMode, getRecommendationColors } from '../lib/ColorblindContext';
 
 export default function RecommendationCard({ recommendation }) {
   const [showReasons, setShowReasons] = useState(false);
+  const { colorblindMode } = useColorblindMode();
 
   if (!recommendation) return null;
 
   const { state, confidence, reasons, text, proactive_tip, humidity_tip, comfort_period } = recommendation;
-  const style = STATE_STYLES[state] || STATE_STYLES.DO_NOTHING;
+  const style = getRecommendationColors(state, colorblindMode);
 
   return (
     <div className={`rounded-xl border-2 p-6 ${style.bg}`}>

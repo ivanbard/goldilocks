@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSavings } from '../lib/api';
+import { useColorblindMode, getChartColors } from '../lib/ColorblindContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const TABS = ['today', 'month', 'all'];
@@ -7,6 +8,8 @@ const TABS = ['today', 'month', 'all'];
 export default function SavingsPage() {
   const [tab, setTab] = useState('month');
   const { data, error, isLoading } = useSavings(tab);
+  const { colorblindMode } = useColorblindMode();
+  const chartColors = getChartColors(colorblindMode);
 
   if (isLoading) {
     return (
@@ -54,9 +57,9 @@ export default function SavingsPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card bg-green-50 border-green-100">
-          <p className="text-sm text-green-600 font-medium">Money Saved</p>
-          <p className="text-3xl font-bold text-green-700 mt-1">
+        <div className="card" style={{ backgroundColor: 'var(--color-success-bg)', borderColor: 'var(--color-success-border)' }}>
+          <p className="text-sm font-medium" style={{ color: 'var(--color-success-text-bold)' }}>Money Saved</p>
+          <p className="text-3xl font-bold mt-1" style={{ color: 'var(--color-success-text)' }}>
             ${(data?.dollars_saved || 0).toFixed(2)}
           </p>
         </div>
@@ -86,7 +89,7 @@ export default function SavingsPage() {
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
                   formatter={(val) => [`$${val.toFixed(4)}`, 'Saved']}
                 />
-                <Bar dataKey="saved" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="saved" fill={chartColors.savingsBar} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

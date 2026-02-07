@@ -5,6 +5,51 @@
 :root {
   --foreground: #171717;
   --background: #f5f5f5;
+  /* Semantic color tokens — normal mode */
+  --color-success-bg: #f0fdf4;       /* green-50 */
+  --color-success-border: #bbf7d0;   /* green-200 */
+  --color-success-text: #15803d;     /* green-700 */
+  --color-success-text-bold: #16a34a; /* green-600 */
+  --color-success-fill: #22c55e;     /* green-500 */
+  --color-success-light: #dcfce7;    /* green-100 */
+  --color-warn-bg: #fefce8;          /* yellow-50 */
+  --color-warn-border: #fde68a;      /* yellow-200 */
+  --color-warn-text: #a16207;        /* yellow-700 */
+  --color-warn-light: #fef9c3;       /* yellow-100 */
+  --color-eco-bg: #ecfdf5;           /* emerald-50 */
+  --color-eco-border: #a7f3d0;       /* emerald-200 */
+  --color-eco-text: #047857;         /* emerald-700 */
+  --color-eco-text-light: #059669;   /* emerald-600 */
+  --color-eco-fill: #10b981;         /* emerald-500 */
+  --color-eco-fill-light: #d1fae5;   /* emerald-100 */
+  --color-eco-stroke: #059669;       /* emerald-600 */
+  --color-eco-gradient-from: #059669; /* emerald-600 */
+  --color-eco-gradient-to: #0f766e;   /* teal-700 */
+  --color-sensor-online: #4ade80;    /* green-400 */
+}
+
+/* Colorblind mode — swap green→blue, yellow→orange, emerald→teal/blue */
+.colorblind {
+  --color-success-bg: #eff6ff;       /* blue-50 */
+  --color-success-border: #bfdbfe;   /* blue-200 */
+  --color-success-text: #1d4ed8;     /* blue-700 */
+  --color-success-text-bold: #2563eb; /* blue-600 */
+  --color-success-fill: #3b82f6;     /* blue-500 */
+  --color-success-light: #dbeafe;    /* blue-100 */
+  --color-warn-bg: #fff7ed;          /* orange-50 */
+  --color-warn-border: #fed7aa;      /* orange-200 */
+  --color-warn-text: #c2410c;        /* orange-700 */
+  --color-warn-light: #ffedd5;       /* orange-100 */
+  --color-eco-bg: #f0fdfa;           /* teal-50 */
+  --color-eco-border: #99f6e4;       /* teal-200 */
+  --color-eco-text: #0f766e;         /* teal-700 */
+  --color-eco-text-light: #0d9488;   /* teal-600 */
+  --color-eco-fill: #14b8a6;         /* teal-500 */
+  --color-eco-fill-light: #ccfbf1;   /* teal-100 */
+  --color-eco-stroke: #0d9488;       /* teal-600 */
+  --color-eco-gradient-from: #0d9488; /* teal-600 */
+  --color-eco-gradient-to: #1e40af;   /* blue-800 */
+  --color-sensor-online: #60a5fa;    /* blue-400 */
 }
 
 body {
@@ -27,11 +72,13 @@ body {
 }
 
 .badge-green {
-  @apply bg-green-100 text-green-800;
+  background-color: var(--color-success-light);
+  color: var(--color-success-text);
 }
 
 .badge-yellow {
-  @apply bg-yellow-100 text-yellow-800;
+  background-color: var(--color-warn-light);
+  color: var(--color-warn-text);
 }
 
 .badge-red {
@@ -45,3 +92,13 @@ body {
 .badge-gray {
   @apply bg-gray-100 text-gray-700;
 }
+
+/* ── Semantic color utility classes ──────────────────────── */
+.eco-bg      { background-color: var(--color-eco-bg); }
+.eco-border  { border-color: var(--color-eco-border); }
+.eco-text    { color: var(--color-eco-text); }
+.eco-text-lt { color: var(--color-eco-text-light); }
+.success-bg      { background-color: var(--color-success-bg); }
+.success-border  { border-color: var(--color-success-border); }
+.success-text    { color: var(--color-success-text); }
+.success-text-bold { color: var(--color-success-text-bold); }

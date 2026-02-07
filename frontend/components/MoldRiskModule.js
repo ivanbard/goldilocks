@@ -1,15 +1,11 @@
-const RISK_COLORS = {
-  LOW: { bar: 'bg-green-400', text: 'text-green-700', bg: 'bg-green-50' },
-  MEDIUM: { bar: 'bg-yellow-400', text: 'text-yellow-700', bg: 'bg-yellow-50' },
-  HIGH: { bar: 'bg-red-400', text: 'text-red-700', bg: 'bg-red-50' },
-  UNKNOWN: { bar: 'bg-gray-300', text: 'text-gray-500', bg: 'bg-gray-50' },
-};
+import { useColorblindMode, getRiskColors } from '../lib/ColorblindContext';
 
 export default function MoldRiskModule({ moldRisk }) {
+  const { colorblindMode } = useColorblindMode();
   if (!moldRisk) return null;
 
   const { risk_level, risk_score, explanation, stats } = moldRisk;
-  const colors = RISK_COLORS[risk_level] || RISK_COLORS.UNKNOWN;
+  const colors = getRiskColors(risk_level, colorblindMode);
 
   return (
     <div className="card">
@@ -31,7 +27,7 @@ export default function MoldRiskModule({ moldRisk }) {
           </div>
         </div>
         <div className={`text-center px-3 py-1 rounded-lg ${colors.bg}`}>
-          <p className={`text-2xl font-bold ${colors.text}`}>{risk_score}</p>
+          <p className={`text-2xl font-bold ${colors.text}`}>{colors.icon} {risk_score}</p>
           <p className={`text-xs font-medium ${colors.text}`}>{risk_level}</p>
         </div>
       </div>

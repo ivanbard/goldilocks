@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useUser, postPreferences } from '../lib/api';
+import { useColorblindMode } from '../lib/ColorblindContext';
 
 export default function SettingsPage() {
   const { data: user, mutate } = useUser();
+  const { colorblindMode, toggleColorblindMode } = useColorblindMode();
   const [form, setForm] = useState({
     name: '',
     plan_type: 'TOU',
@@ -237,15 +239,16 @@ export default function SettingsPage() {
                   onClick={() => handleChange('heating_source', val)}
                   className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
                     form.heating_source === val
-                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      ? 'border-2 font-medium'
                       : 'border-gray-200 text-gray-500 hover:border-gray-300'
                   }`}
+                  style={form.heating_source === val ? { borderColor: 'var(--color-eco-fill)', backgroundColor: 'var(--color-eco-bg)', color: 'var(--color-eco-text)' } : {}}
                 >
                   {icon} {label}
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-400 mt-1">Affects carbon emissions calculations. Most Kingston homes use natural gas.</p>
+            <p className="text-xs text-gray-400 mt-1">Affects carbon emissions. Most Kingston homes use natural gas.</p>
           </div>
           <div>
             <label className="text-sm text-gray-600 block mb-1">Postal Code</label>
@@ -288,6 +291,30 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      {/* Colorblind Mode */}
+      <div className="card">
+        <h3 className="card-title">Accessibility</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Colorblind-Friendly Mode</label>
+            <p className="text-xs text-gray-400">Uses blue/orange instead of green/yellow for better visibility</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleColorblindMode(!colorblindMode)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              colorblindMode ? 'bg-blue-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                colorblindMode ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
       {/* Notification Quiet Hours */}
       <div className="card">
         <h3 className="card-title">Notification Quiet Hours</h3>
@@ -324,7 +351,7 @@ export default function SettingsPage() {
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
         {saved && (
-          <span className="text-sm text-green-600 font-medium">✓ Settings saved!</span>
+          <span className="text-sm font-medium" style={{ color: 'var(--color-success-text)' }}>✓ Settings saved!</span>
         )}
       </div>
     </div>

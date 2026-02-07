@@ -259,8 +259,8 @@ export default function Simulator() {
         </p>
         <div className="relative h-8 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 to-emerald-500 rounded-full transition-all duration-500"
-            style={{ width: `${Math.min(sim.pctOf2030Target, 100)}%` }}
+            className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(sim.pctOf2030Target, 100)}%`, background: `linear-gradient(to right, #f59e0b, var(--color-eco-fill))` }}
           />
           <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-800">
             {sim.pctOf2030Target.toFixed(1)}% of 2030 Target
@@ -268,7 +268,7 @@ export default function Simulator() {
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-2">
           <span>0 tonnes/yr</span>
-          <span className="font-medium text-emerald-600">Target: {fmt(sim.kingstonTotalTonnes * KINGSTON_2030_TARGET_PCT / 100)} tonnes/yr</span>
+          <span className="font-medium" style={{ color: 'var(--color-eco-text-light)' }}>Target: {fmt(sim.kingstonTotalTonnes * KINGSTON_2030_TARGET_PCT / 100)} tonnes/yr</span>
         </div>
       </div>
 

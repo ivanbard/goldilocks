@@ -1,4 +1,7 @@
+import { useColorblindMode, getDeltaColors } from '../lib/ColorblindContext';
+
 export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
+  const { colorblindMode } = useColorblindMode();
   const formatTemp = (t) => t != null ? `${t.toFixed(1)}°C` : '—';
   const formatHumidity = (h) => h != null ? `${h.toFixed(0)}%` : 'N/A';
   const formatPressure = (p) => p != null ? `${p.toFixed(0)} hPa` : '—';
@@ -13,11 +16,7 @@ export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="card-title mb-0">Indoor vs Outdoor</h3>
         {deltaT != null && (
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-            Math.abs(deltaT) < 3 ? 'bg-green-100 text-green-700' :
-            Math.abs(deltaT) < 8 ? 'bg-amber-100 text-amber-700' :
-            'bg-red-100 text-red-700'
-          }`}>
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${getDeltaColors(deltaT, colorblindMode)}`}>
             ΔT {deltaSign}{deltaT}°C
           </span>
         )}
@@ -29,7 +28,7 @@ export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
             <span className="text-lg">🏠</span>
             <span className="text-sm font-medium text-gray-600">Indoor</span>
             {indoor?.sensorOnline ? (
-              <span className="w-2 h-2 bg-green-400 rounded-full ml-auto" title="Sensor online" />
+              <span className="w-2 h-2 rounded-full ml-auto" style={{ backgroundColor: 'var(--color-sensor-online)' }} title="Sensor online" />
             ) : (
               <span className="w-2 h-2 bg-red-400 rounded-full ml-auto" title="Sensor offline" />
             )}

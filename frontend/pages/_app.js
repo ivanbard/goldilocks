@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import ChatPanel from '../components/ChatPanel';
 import OnboardingModal from '../components/OnboardingModal';
+import { ColorblindProvider } from '../lib/ColorblindContext';
 
 const fetcher = (url) => fetch(url).then(r => r.json());
 
@@ -45,6 +46,7 @@ export default function App({ Component, pageProps }) {
   };
 
   return (
+    <ColorblindProvider>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
@@ -80,5 +82,6 @@ export default function App({ Component, pageProps }) {
       {/* First-time onboarding */}
       {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
     </div>
+    </ColorblindProvider>
   );
 }

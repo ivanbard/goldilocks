@@ -1,4 +1,5 @@
 import { useCarbon } from '../lib/api';
+import { useColorblindMode, getChartColors } from '../lib/ColorblindContext';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const LEAF = '🌿';
@@ -11,13 +12,17 @@ const CLOCK = '⏳';
 
 function StatCard({ icon, value, unit, label, accent = 'emerald', sub }) {
   const colors = {
-    emerald: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+    emerald: 'border text-current',
     blue: 'bg-blue-50 border-blue-200 text-blue-700',
     amber: 'bg-amber-50 border-amber-200 text-amber-700',
     purple: 'bg-purple-50 border-purple-200 text-purple-700',
   };
+  const isEco = accent === 'emerald';
   return (
-    <div className={`rounded-xl border p-4 ${colors[accent]}`}>
+    <div
+      className={`rounded-xl border p-4 ${isEco ? '' : colors[accent]}`}
+      style={isEco ? { backgroundColor: 'var(--color-eco-bg)', borderColor: 'var(--color-eco-border)', color: 'var(--color-eco-text)' } : {}}
+    >
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xl">{icon}</span>
         <span className="text-xs font-medium uppercase tracking-wide opacity-70">{label}</span>
@@ -40,20 +45,22 @@ function GenerationalTimeline({ data }) {
           {/* Timeline connector */}
           <div className="flex flex-col items-center">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
-              i === 0 ? 'bg-emerald-500 text-white' :
+              i === 0 ? 'text-white' :
               i === data.length - 1 ? 'bg-amber-500 text-white' :
-              'bg-emerald-100 text-emerald-700'
-            }`}>
+              ''
+            }`}
+            style={i === 0 ? { backgroundColor: 'var(--color-eco-fill)' } : (i !== data.length - 1 ? { backgroundColor: 'var(--color-eco-fill-light)', color: 'var(--color-eco-text)' } : {})}
+            >
               {milestone.years}y
             </div>
-            {i < data.length - 1 && <div className="w-0.5 h-full bg-emerald-200 min-h-[2rem]" />}
+            {i < data.length - 1 && <div className="w-0.5 h-full min-h-[2rem]" style={{ backgroundColor: 'var(--color-eco-border)' }} />}
           </div>
           
           {/* Content */}
           <div className="pb-4 flex-1">
             <div className="flex items-baseline gap-2">
               <h4 className="font-semibold text-gray-900">{milestone.label}</h4>
-              <span className="text-sm text-emerald-600 font-medium">
+              <span className="text-sm font-medium" style={{ color: 'var(--color-eco-text-light)' }}>
                 {milestone.cumulative_tonnes.toLocaleString()} tonnes CO₂
               </span>
             </div>
@@ -71,11 +78,13 @@ function GenerationalTimeline({ data }) {
 
 export default function CarbonPage() {
   const { data, error, isLoading } = useCarbon();
+  const { colorblindMode } = useColorblindMode();
+  const chartColors = getChartColors(colorblindMode);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-t-transparent rounded-full" style={{ borderColor: 'var(--color-eco-fill)', borderTopColor: 'transparent' }} />
       </div>
     );
   }
@@ -103,30 +112,30 @@ export default function CarbonPage() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-8 text-white">
+      <div className="rounded-2xl p-8 text-white" style={{ background: `linear-gradient(to bottom right, var(--color-eco-gradient-from), var(--color-eco-gradient-to))` }}>
         <div className="flex items-center gap-3 mb-2">
           <span className="text-4xl">{GLOBE}</span>
           <div>
             <h2 className="text-2xl font-bold">Carbon Impact</h2>
-            <p className="text-emerald-100 text-sm">Your contribution to Kingston&apos;s sustainable future</p>
+            <p className="text-sm opacity-80">Your contribution to Kingston&apos;s sustainable future</p>
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
           <div>
             <p className="text-3xl font-bold">{(total.co2_saved_kg || 0).toFixed(2)}</p>
-            <p className="text-emerald-200 text-sm">kg CO₂ avoided</p>
+            <p className="text-sm opacity-70">kg CO₂ avoided</p>
           </div>
           <div>
             <p className="text-3xl font-bold">{total.days_tracked || 0}</p>
-            <p className="text-emerald-200 text-sm">days tracked</p>
+            <p className="text-sm opacity-70">days tracked</p>
           </div>
           <div>
             <p className="text-3xl font-bold">{(data?.today?.co2_saved_g || 0).toFixed(0)}</p>
-            <p className="text-emerald-200 text-sm">g CO₂ saved today</p>
+            <p className="text-sm opacity-70">g CO₂ saved today</p>
           </div>
           <div>
             <p className="text-3xl font-bold">{data?.user_heating_source || 'gas'}</p>
-            <p className="text-emerald-200 text-sm">heating source</p>
+            <p className="text-sm opacity-70">heating source</p>
           </div>
         </div>
       </div>
@@ -159,7 +168,7 @@ export default function CarbonPage() {
                 formatter={(v) => [`${v} g`, 'CO₂ saved']}
                 contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
               />
-              <Bar dataKey="co2" fill="#10b981" radius={[4, 4, 0, 0]} name="CO₂ saved (g)" />
+              <Bar dataKey="co2" fill={chartColors.barFill} radius={[4, 4, 0, 0]} name="CO₂ saved (g)" />
             </BarChart>
           </ResponsiveContainer>
         ) : (
@@ -180,7 +189,7 @@ export default function CarbonPage() {
                 formatter={(v) => [`${v} g`, 'Total CO₂ saved']}
                 contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
               />
-              <Area type="monotone" dataKey="cumulative" fill="#d1fae5" stroke="#059669" strokeWidth={2} name="Cumulative (g)" />
+              <Area type="monotone" dataKey="cumulative" fill={chartColors.areaFill} stroke={chartColors.areaStroke} strokeWidth={2} name="Cumulative (g)" />
             </AreaChart>
           </ResponsiveContainer>
         ) : (
@@ -189,7 +198,7 @@ export default function CarbonPage() {
       </div>
 
       {/* Community Impact */}
-      <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50/50 p-6">
+      <div className="rounded-xl border-2 p-6" style={{ borderColor: 'var(--color-eco-border)', backgroundColor: 'var(--color-eco-bg)' }}>
         <div className="flex items-center gap-2 mb-4">
           <span className="text-2xl">{CITY}</span>
           <div>
@@ -200,20 +209,20 @@ export default function CarbonPage() {
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg p-3 border border-emerald-100">
-            <p className="text-2xl font-bold text-emerald-700">{community.annual_community_tonnes?.toLocaleString() || 0}</p>
+          <div className="bg-white rounded-lg p-3 border" style={{ borderColor: 'var(--color-eco-border)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--color-eco-text)' }}>{community.annual_community_tonnes?.toLocaleString() || 0}</p>
             <p className="text-xs text-gray-500">tonnes CO₂/year</p>
           </div>
-          <div className="bg-white rounded-lg p-3 border border-emerald-100">
-            <p className="text-2xl font-bold text-emerald-700">{community.annual_community_trees?.toLocaleString() || 0}</p>
+          <div className="bg-white rounded-lg p-3 border" style={{ borderColor: 'var(--color-eco-border)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--color-eco-text)' }}>{community.annual_community_trees?.toLocaleString() || 0}</p>
             <p className="text-xs text-gray-500">trees equivalent/year</p>
           </div>
-          <div className="bg-white rounded-lg p-3 border border-emerald-100">
-            <p className="text-2xl font-bold text-emerald-700">{(community.pct_reduction || 0).toFixed(2)}%</p>
+          <div className="bg-white rounded-lg p-3 border" style={{ borderColor: 'var(--color-eco-border)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--color-eco-text)' }}>{(community.pct_reduction || 0).toFixed(2)}%</p>
             <p className="text-xs text-gray-500">of residential emissions</p>
           </div>
-          <div className="bg-white rounded-lg p-3 border border-emerald-100">
-            <p className="text-2xl font-bold text-emerald-700">{(community.annual_user_kg || 0).toFixed(1)}</p>
+          <div className="bg-white rounded-lg p-3 border" style={{ borderColor: 'var(--color-eco-border)' }}>
+            <p className="text-2xl font-bold" style={{ color: 'var(--color-eco-text)' }}>{(community.annual_user_kg || 0).toFixed(1)}</p>
             <p className="text-xs text-gray-500">kg CO₂ you save/year</p>
           </div>
         </div>
