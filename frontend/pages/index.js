@@ -6,6 +6,7 @@ import SavingsWidget from '../components/SavingsWidget';
 import MoldRiskModule from '../components/MoldRiskModule';
 import HumidityTimeline from '../components/HumidityTimeline';
 import NotificationsPanel from '../components/NotificationsPanel';
+import CarbonWidget from '../components/CarbonWidget';
 
 export default function Dashboard() {
   const { data, error, isLoading } = useDashboard();
@@ -45,7 +46,7 @@ export default function Dashboard() {
       {/* Top row: Indoor/Outdoor + Electricity + Savings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <IndoorOutdoorComparison indoor={indoor} outdoor={outdoor} />
+          <IndoorOutdoorComparison indoor={indoor} outdoor={outdoor} location={weather?.location} />
         </div>
         <div className="space-y-4">
           <ElectricityPriceChip electricity={electricity} />
@@ -57,6 +58,9 @@ export default function Dashboard() {
         <SavingsWidget costEstimate={costEstimate} todaySavings={todaySavings} />
         <MoldRiskModule moldRisk={moldRisk} />
       </div>
+
+      {/* Carbon Impact Widget */}
+      <CarbonWidget />
 
       {/* Humidity timeline chart */}
       <HumidityTimeline deviceId="demo-device-001" />

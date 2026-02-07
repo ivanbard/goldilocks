@@ -1,6 +1,9 @@
 import '../styles/globals.css';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import useSWR from 'swr';
+
+const fetcher = (url) => fetch(url).then(r => r.json());
 
 function NavLink({ href, children }) {
   const router = useRouter();
@@ -20,6 +23,9 @@ function NavLink({ href, children }) {
 }
 
 export default function App({ Component, pageProps }) {
+  const { data } = useSWR(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/weather`, fetcher, { refreshInterval: 600000 });
+  const locationName = data?.location?.replace(', CA', '').replace(', ON', '') || 'Loading...';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -28,10 +34,11 @@ export default function App({ Component, pageProps }) {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🌬️</span>
             <h1 className="text-lg font-bold text-gray-900">VentSmart</h1>
-            <span className="text-xs text-gray-400 mt-1">Kingston</span>
+            <span className="text-xs text-gray-400 mt-1">{locationName}</span>
           </div>
           <nav className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <NavLink href="/">Dashboard</NavLink>
+            <NavLink href="/carbon">Carbon</NavLink>
             <NavLink href="/savings">Savings</NavLink>
             <NavLink href="/settings">Settings</NavLink>
           </nav>
@@ -45,7 +52,7 @@ export default function App({ Component, pageProps }) {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 mt-12 py-4 text-center text-xs text-gray-400">
-        VentSmart Kingston — QHacks 2026
+        VentSmart {locationName} — QHacks 2026
       </footer>
     </div>
   );

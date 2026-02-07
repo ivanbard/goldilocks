@@ -9,6 +9,8 @@ const { getRecommendation, getRecommendationText } = require('./logic/recommenda
 const { estimateCost, calculatePeriodSavings } = require('./logic/costSavings');
 const { computeMoldRisk } = require('./logic/moldRisk');
 const { generateSuggestions } = require('./logic/llmSuggestions');
+const { estimateIndoorHumidity } = require('./logic/humidityEstimator');
+const { calculateAvoidedCO2, getEquivalences, getCommunityImpact, getGenerationalProjection, dailyCarbonSavings } = require('./logic/carbonEstimator');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
@@ -128,12 +130,21 @@ app.get('/api/dashboard', async (req, res) => {
 
     // Indoor values (from latest reading or defaults)
     const Tin = latestReading ? latestReading.temp_C : 21;
-    const RHin = latestReading ? latestReading.humidity_RH : null;
+    let RHin = latestReading ? latestReading.humidity_RH : null;
     const pressureIn = latestReading ? latestReading.pressure_hPa : null;
 
     // Outdoor values
     const Tout = weather.current.temp_C;
     const RHout = weather.current.humidity_RH;
+
+    // Estimate indoor humidity if no sensor
+    let humidityEstimate = null;
+    if (RHin == null && Tout != null && RHout != null && Tin != null) {
+      humidityEstimate = estimateIndoorHumidity(Tin, Tout, RHout);
+      if (humidityEstimate.humidity_RH != null) {
+        RHin = humidityEstimate.humidity_RH;
+      }
+    }
 
     // Mold risk
     const moldRisk = computeMoldRisk(last24h, 1);
@@ -189,6 +200,8 @@ app.get('/api/dashboard', async (req, res) => {
       indoor: {
         temp_C: Tin,
         humidity_RH: RHin,
+        humidity_estimated: humidityEstimate != null,
+        humidity_confidence: humidityEstimate?.confidence || null,
         pressure_hPa: pressureIn,
         lastUpdated: latestReading?.ts || null,
         sensorOnline: !!latestReading,
@@ -386,6 +399,71 @@ app.get('/api/electricity/schedule', (req, res) => {
   }
 });
 
+// --- GET /api/carbon --- Carbon emissions impact data ---
+app.get('/api/carbon', (req, res) => {
+  try {
+    const user = db.prepare('SELECT * FROM users LIMIT 1').get();
+    if (!user) return res.status(404).json({ error: 'No user found' });
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get all daily summaries for carbon calculation
+    const allSummaries = db.prepare(
+      'SELECT * FROM daily_summary WHERE user_id = ? ORDER BY date ASC'
+    ).all(user.id);
+
+    // Calculate CO2 savings for each day
+    const heatingSource = user.heating_source || 'gas';
+    let totalCO2_g = 0;
+    const dailyCarbon = allSummaries.map(day => {
+      const carbon = dailyCarbonSavings(day.kwh_saved_est, heatingSource);
+      totalCO2_g += carbon.co2_saved_g;
+      return {
+        date: day.date,
+        kwh_saved: day.kwh_saved_est,
+        co2_saved_g: carbon.co2_saved_g,
+        cumulative_co2_g: Math.round(totalCO2_g * 100) / 100,
+      };
+    });
+
+    // Today's carbon savings
+    const todaySummary = allSummaries.find(s => s.date === today);
+    const todayCarbon = todaySummary 
+      ? dailyCarbonSavings(todaySummary.kwh_saved_est, heatingSource)
+      : { co2_saved_g: 0 };
+
+    // Equivalences for total
+    const equivalences = getEquivalences(totalCO2_g);
+
+    // Community impact projection
+    const days_tracked = allSummaries.length || 1;
+    const community = getCommunityImpact({ user_co2_saved_g: totalCO2_g, days_tracked });
+
+    // Generational projection
+    const generational = getGenerationalProjection(community.annual_community_tonnes);
+
+    res.json({
+      user_heating_source: heatingSource,
+      today: {
+        co2_saved_g: todayCarbon.co2_saved_g,
+        kwh_saved: todaySummary?.kwh_saved_est || 0,
+      },
+      total: {
+        co2_saved_g: Math.round(totalCO2_g * 100) / 100,
+        co2_saved_kg: Math.round(totalCO2_g / 10) / 100,
+        days_tracked,
+      },
+      equivalences,
+      community,
+      generational,
+      dailyBreakdown: dailyCarbon,
+    });
+  } catch (err) {
+    console.error('GET /api/carbon error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- POST /api/suggestions/generate — Generate LLM-powered suggestions ---
 app.post('/api/suggestions/generate', async (req, res) => {
   try {
@@ -417,9 +495,16 @@ app.post('/api/suggestions/generate', async (req, res) => {
     const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY, user.postal_code);
     const rate = getCurrentRate(user.plan_type);
     const Tin = latestReading ? latestReading.temp_C : 21;
-    const RHin = latestReading ? latestReading.humidity_RH : null;
+    let RHin = latestReading ? latestReading.humidity_RH : null;
     const Tout = weather.current.temp_C;
     const RHout = weather.current.humidity_RH;
+
+    // Estimate indoor humidity if no sensor
+    if (RHin == null && Tout != null && RHout != null && Tin != null) {
+      const est = estimateIndoorHumidity(Tin, Tout, RHout);
+      if (est.humidity_RH != null) RHin = est.humidity_RH;
+    }
+
     const moldRisk = computeMoldRisk(last24h, 1);
     const target = (user.comfort_min + user.comfort_max) / 2;
 

@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS daily_summary (
   dollars_saved_est REAL DEFAULT 0,
   minutes_over_60 REAL DEFAULT 0,
   minutes_over_70 REAL DEFAULT 0,
+  co2_saved_g REAL DEFAULT 0,
   risk_level TEXT DEFAULT 'LOW' CHECK(risk_level IN ('LOW', 'MEDIUM', 'HIGH')),
   FOREIGN KEY (user_id) REFERENCES users(id),
   UNIQUE(user_id, date)

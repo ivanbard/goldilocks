@@ -1,4 +1,4 @@
-export default function IndoorOutdoorComparison({ indoor, outdoor }) {
+export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
   const formatTemp = (t) => t != null ? `${t.toFixed(1)}°C` : '—';
   const formatHumidity = (h) => h != null ? `${h.toFixed(0)}%` : 'N/A';
   const formatPressure = (p) => p != null ? `${p.toFixed(0)} hPa` : '—';
@@ -26,7 +26,9 @@ export default function IndoorOutdoorComparison({ indoor, outdoor }) {
             <div className="flex gap-4">
               <div>
                 <p className="text-lg font-semibold text-gray-800">{formatHumidity(indoor?.humidity_RH)}</p>
-                <p className="text-xs text-gray-500">Humidity</p>
+                <p className="text-xs text-gray-500">
+                  Humidity{indoor?.humidity_estimated && <span className="text-amber-500 ml-1" title={`Estimated (${indoor.humidity_confidence} confidence)`}>~est</span>}
+                </p>
               </div>
               <div>
                 <p className="text-lg font-semibold text-gray-800">{formatPressure(indoor?.pressure_hPa)}</p>
@@ -41,7 +43,7 @@ export default function IndoorOutdoorComparison({ indoor, outdoor }) {
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">🌤️</span>
             <span className="text-sm font-medium text-gray-600">Outdoor</span>
-            <span className="text-xs text-gray-400 ml-auto">Kingston</span>
+            <span className="text-xs text-gray-400 ml-auto">{location || 'Loading...'}</span>
           </div>
           <div className="space-y-2">
             <div>

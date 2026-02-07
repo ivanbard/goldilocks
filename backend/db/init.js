@@ -42,6 +42,22 @@ function initSchema() {
 
     console.log('Seeded demo user (id=' + userId + ') + device');
   }
+
+  // Migration: add co2_saved_g column if missing
+  try {
+    db.prepare('SELECT co2_saved_g FROM daily_summary LIMIT 1').get();
+  } catch (e) {
+    db.exec('ALTER TABLE daily_summary ADD COLUMN co2_saved_g REAL DEFAULT 0');
+    console.log('Migrated: added co2_saved_g to daily_summary');
+  }
+
+  // Migration: add heating_source column to users if missing
+  try {
+    db.prepare('SELECT heating_source FROM users LIMIT 1').get();
+  } catch (e) {
+    db.exec("ALTER TABLE users ADD COLUMN heating_source TEXT DEFAULT 'gas'");
+    console.log('Migrated: added heating_source to users');
+  }
 }
 
 module.exports = { getDb, DB_PATH };

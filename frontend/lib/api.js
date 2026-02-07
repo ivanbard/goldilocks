@@ -47,6 +47,10 @@ export async function postAction(data) {
   return res.json();
 }
 
+export function useCarbon() {
+  return useApi('/api/carbon', { refreshInterval: 60000 });
+}
+
 export async function markNotificationRead(id) {
   const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
     method: 'POST',
