@@ -1,0 +1,17 @@
+{
+  "name": "ventsmart-kingston",
+  "version": "1.0.0",
+  "description": "VentSmart Kingston — Arduino + Web App for Ventilation, Cost Savings, and Mold Risk",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && node server.js",
+    "dev:frontend": "cd frontend && npm run dev",
+    "gateway": "cd gateway && node index.js",
+    "seed": "cd backend && node db/seed.js",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ../gateway && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
