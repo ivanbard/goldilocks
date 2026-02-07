@@ -36,12 +36,20 @@ export default function Dashboard() {
 
   if (!data) return null;
 
-  const { indoor, outdoor, electricity, recommendation, costEstimate, moldRisk, todaySavings, weather } = data;
+  const { indoor, outdoor, electricity, recommendation, costEstimate, moldRisk, todaySavings, weather, furnaceFilterReminder } = data;
 
   return (
     <div className="space-y-6">
       {/* Recommendation banner — hero card */}
       <RecommendationCard recommendation={recommendation} />
+
+      {/* Furnace filter reminder */}
+      {furnaceFilterReminder && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="text-xl">🔧</span>
+          <p className="text-sm text-amber-800">{furnaceFilterReminder.message}</p>
+        </div>
+      )}
 
       {/* Top row: Indoor/Outdoor + Electricity + Savings */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

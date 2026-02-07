@@ -1,8 +1,10 @@
 import '../styles/globals.css';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import ChatPanel from '../components/ChatPanel';
+import OnboardingModal from '../components/OnboardingModal';
 
 const fetcher = (url) => fetch(url).then(r => r.json());
 
@@ -24,8 +26,23 @@ function NavLink({ href, children }) {
 }
 
 export default function App({ Component, pageProps }) {
-  const { data } = useSWR(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/weather`, fetcher, { refreshInterval: 600000 });
+  const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const { data } = useSWR(`${API}/api/weather`, fetcher, { refreshInterval: 600000 });
+  const { data: dashData, mutate: mutateDash } = useSWR(`${API}/api/dashboard`, fetcher, { refreshInterval: 30000 });
   const locationName = data?.location?.replace(', CA', '').replace(', ON', '') || 'Loading...';
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (dashData?.user && !dashData.user.onboarded) {
+      setShowOnboarding(true);
+    }
+  }, [dashData]);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    mutateDash();
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -59,6 +76,9 @@ export default function App({ Component, pageProps }) {
 
       {/* Global chat panel */}
       <ChatPanel />
+
+      {/* First-time onboarding */}
+      {showOnboarding && <OnboardingModal onComplete={handleOnboardingComplete} />}
     </div>
   );
 }

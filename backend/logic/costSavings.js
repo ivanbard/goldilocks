@@ -1,35 +1,53 @@
 /**
- * Cost & Savings Model (PRD Section 9.2)
+ * Cost & Savings Model
  * 
- * Estimates 1-hour cost difference between HVAC vs natural ventilation
+ * Uses physics-based formula from project spec:
+ *   kWh per °C = k × 0.000335 × V / COP
+ * where:
+ *   k = furnishing factor (3=light, 5=typical dorm, 9=concrete)
+ *   V = room volume in m³
+ *   COP = coefficient of performance (1 for heating, 2.5 for cooling, 3 for heat pump)
+ * 
  * Room approximation: 4m × 3m × 2.5m = 30m³ (student room)
  */
 
+// Housing type to volume and furnishing factor mapping
+const HOUSING_PROFILES = {
+  dorm:      { volume: 30, k: 5 },
+  apartment: { volume: 45, k: 5 },
+  house:     { volume: 80, k: 7 },
+  basement:  { volume: 35, k: 7 },
+  other:     { volume: 40, k: 5 },
+};
+
+/**
+ * Calculate kWh per °C using physics formula: k × 0.000335 × V
+ */
+function kWhPerDegC(housing_type = 'apartment') {
+  const profile = HOUSING_PROFILES[housing_type] || HOUSING_PROFILES.apartment;
+  return profile.k * 0.000335 * profile.volume;
+}
+
 /**
  * Estimate HVAC cost for the next hour
- * 
- * @param {Object} params
- * @param {number} params.Tin - Indoor temperature °C
- * @param {number} params.target - Target temperature °C
- * @param {number} params.price_cents_per_kWh - Current electricity rate
- * @param {number} params.kWh_per_degC - Energy per degree (default 0.1)
- * @param {number} params.ac_cop - AC coefficient of performance (default 3)
- * @returns {{ cost_heat: number, cost_ac: number, cost_window: number, savings: number, deltaT: number, kWh_room: number, mode: string }}
  */
 function estimateCost({
   Tin,
   target,
   price_cents_per_kWh,
-  kWh_per_degC = 0.1,
-  ac_cop = 3.0,
+  kWh_per_degC,
+  ac_cop = 2.5,
+  housing_type = 'apartment',
 }) {
+  // Use physics formula if no explicit override
+  const effectiveKwh = kWh_per_degC || kWhPerDegC(housing_type);
   const deltaT = Math.abs(target - Tin);
-  const kWh_room = kWh_per_degC * deltaT;
+  const kWh_room = effectiveKwh * deltaT;
 
-  // Heating cost (direct electric)
+  // Heating cost (direct electric / furnace equivalent)
   const cost_heat = kWh_room * (price_cents_per_kWh / 100);
 
-  // Cooling cost (with COP)
+  // Cooling cost (with COP — AC more efficient per kWh but humidity matters)
   const kWh_elec_ac = kWh_room / ac_cop;
   const cost_ac = kWh_elec_ac * (price_cents_per_kWh / 100);
 
@@ -55,9 +73,11 @@ function estimateCost({
     kWh_room: Math.round(kWh_room * 1000) / 1000,
     mode,
     assumptions: {
-      kWh_per_degC,
+      kWh_per_degC: Math.round(effectiveKwh * 10000) / 10000,
       ac_cop,
-      room_volume_m3: 30,
+      room_volume_m3: (HOUSING_PROFILES[housing_type] || HOUSING_PROFILES.apartment).volume,
+      furnishing_factor: (HOUSING_PROFILES[housing_type] || HOUSING_PROFILES.apartment).k,
+      formula: 'k × 0.000335 × V',
     },
   };
 }

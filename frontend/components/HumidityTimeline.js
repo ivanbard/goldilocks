@@ -1,8 +1,9 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { useReadings } from '../lib/api';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
+import { useReadings, useDashboard } from '../lib/api';
 
 export default function HumidityTimeline({ deviceId }) {
   const { data: readings, error } = useReadings(deviceId || 'demo-device-001', 1440);
+  const { data: dashboard } = useDashboard();
 
   if (error) {
     return (
@@ -46,10 +47,13 @@ export default function HumidityTimeline({ deviceId }) {
     );
   }
 
+  const comfortMin = dashboard?.user?.comfort_min ?? 20;
+  const comfortMax = dashboard?.user?.comfort_max ?? 23;
+
   return (
     <div className="card">
-      <h3 className="card-title">24h Humidity &amp; Temperature Timeline</h3>
-      <div className="h-64">
+      <h3 className="card-title">24h Temperature &amp; Humidity Timeline</h3>
+      <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -59,50 +63,56 @@ export default function HumidityTimeline({ deviceId }) {
               interval="preserveStartEnd"
             />
             <YAxis
-              yAxisId="humidity"
-              domain={[30, 100]}
+              yAxisId="temp"
+              domain={[Math.min(10, comfortMin - 5), Math.max(35, comfortMax + 5)]}
               tick={{ fontSize: 11, fill: '#9ca3af' }}
-              label={{ value: '%RH', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#9ca3af' } }}
+              label={{ value: '°C', angle: -90, position: 'insideLeft', style: { fontSize: 11, fill: '#9ca3af' } }}
             />
             <YAxis
-              yAxisId="temp"
+              yAxisId="humidity"
               orientation="right"
-              domain={[10, 35]}
+              domain={[30, 100]}
               tick={{ fontSize: 11, fill: '#9ca3af' }}
-              label={{ value: '°C', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: '#9ca3af' } }}
+              label={{ value: '%RH', angle: 90, position: 'insideRight', style: { fontSize: 11, fill: '#9ca3af' } }}
             />
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
             />
-            <ReferenceLine yAxisId="humidity" y={60} stroke="#eab308" strokeDasharray="5 5" label={{ value: '60%', fontSize: 10, fill: '#eab308' }} />
-            <ReferenceLine yAxisId="humidity" y={70} stroke="#ef4444" strokeDasharray="5 5" label={{ value: '70%', fontSize: 10, fill: '#ef4444' }} />
-            <Line
-              yAxisId="humidity"
-              type="monotone"
-              dataKey="humidity"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={false}
-              name="Humidity %"
-            />
+            {/* Gold comfort zone band */}
+            <ReferenceArea yAxisId="temp" y1={comfortMin} y2={comfortMax} fill="#f59e0b" fillOpacity={0.12} />
+            <ReferenceLine yAxisId="temp" y={comfortMin} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: `${comfortMin}°`, fontSize: 10, fill: '#f59e0b' }} />
+            <ReferenceLine yAxisId="temp" y={comfortMax} stroke="#f59e0b" strokeDasharray="5 5" label={{ value: `${comfortMax}°`, fontSize: 10, fill: '#f59e0b' }} />
+            {/* Humidity risk thresholds */}
+            <ReferenceLine yAxisId="humidity" y={60} stroke="#eab308" strokeDasharray="3 3" strokeOpacity={0.5} />
+            <ReferenceLine yAxisId="humidity" y={70} stroke="#ef4444" strokeDasharray="3 3" strokeOpacity={0.5} />
+            {/* Blue line = actual temperature */}
             <Line
               yAxisId="temp"
               type="monotone"
               dataKey="temp"
-              stroke="#f97316"
+              stroke="#3b82f6"
+              strokeWidth={2.5}
+              dot={false}
+              name="Temperature °C"
+            />
+            {/* Gray dashed line = humidity */}
+            <Line
+              yAxisId="humidity"
+              type="monotone"
+              dataKey="humidity"
+              stroke="#9ca3af"
               strokeWidth={1.5}
               dot={false}
-              name="Temp °C"
+              name="Humidity %"
               strokeDasharray="4 2"
             />
           </LineChart>
         </ResponsiveContainer>
       </div>
       <div className="flex gap-4 justify-center mt-2 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500 inline-block"></span> Humidity</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-orange-500 inline-block" style={{ borderTop: '2px dashed #f97316' }}></span> Temp</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-yellow-500 inline-block" style={{ borderTop: '2px dashed #eab308' }}></span> 60% risk</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500 inline-block" style={{ borderTop: '2px dashed #ef4444' }}></span> 70% risk</span>
+        <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-blue-500 inline-block"></span> Temperature</span>
+        <span className="flex items-center gap-1"><span className="w-4 h-3 bg-amber-400/20 border border-amber-400 inline-block rounded-sm"></span> Comfort zone</span>
+        <span className="flex items-center gap-1"><span className="w-4 h-0.5 bg-gray-400 inline-block" style={{ borderTop: '2px dashed #9ca3af' }}></span> Humidity</span>
       </div>
     </div>
   );

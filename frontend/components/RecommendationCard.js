@@ -12,7 +12,7 @@ export default function RecommendationCard({ recommendation }) {
 
   if (!recommendation) return null;
 
-  const { state, confidence, reasons, text } = recommendation;
+  const { state, confidence, reasons, text, proactive_tip, humidity_tip, comfort_period } = recommendation;
   const style = STATE_STYLES[state] || STATE_STYLES.DO_NOTHING;
 
   return (
@@ -27,8 +27,19 @@ export default function RecommendationCard({ recommendation }) {
             }`}>
               {confidence} confidence
             </span>
+            {comfort_period === 'night' && (
+              <span className="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full">🌙 Night mode</span>
+            )}
           </div>
           <p className={`text-xl font-semibold ${style.color} mt-2`}>{text}</p>
+          {/* Proactive forecast tip */}
+          {proactive_tip && (
+            <p className="text-sm text-gray-600 mt-2 bg-white/50 rounded-lg px-3 py-2">{proactive_tip}</p>
+          )}
+          {/* Humidity / AC efficiency tip */}
+          {humidity_tip && (
+            <p className="text-sm text-amber-700 mt-2 bg-amber-50/50 rounded-lg px-3 py-2">{humidity_tip}</p>
+          )}
         </div>
         <button
           onClick={() => setShowReasons(!showReasons)}

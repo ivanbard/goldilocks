@@ -17,6 +17,10 @@
 // Low because Ontario is ~60% nuclear, ~25% hydro, ~10% gas
 const GRID_INTENSITY_G_PER_KWH = 35;
 
+// Canada national grid intensity (g CO2 / kWh) — used for national comparisons
+// Source: Canada Energy Regulator
+const CANADA_GRID_INTENSITY = 127.82;
+
 // Natural gas heating intensity (g CO2 / kWh thermal equivalent)
 // Most Kingston homes use gas furnaces
 const GAS_HEAT_INTENSITY_G_PER_KWH = 185;

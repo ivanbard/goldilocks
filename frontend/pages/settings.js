@@ -4,9 +4,12 @@ import { useUser, postPreferences } from '../lib/api';
 export default function SettingsPage() {
   const { data: user, mutate } = useUser();
   const [form, setForm] = useState({
+    name: '',
     plan_type: 'TOU',
     comfort_min: 20,
     comfort_max: 23,
+    comfort_min_night: 18,
+    comfort_max_night: 21,
     room_kwh_per_degC: 0.1,
     ac_cop: 3.0,
     postal_code: 'K7L',
@@ -16,6 +19,7 @@ export default function SettingsPage() {
     quiet_hours_start: '22:00',
     quiet_hours_end: '07:00',
     heating_source: 'gas',
+    furnace_filter_last_changed: '',
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -25,9 +29,12 @@ export default function SettingsPage() {
     if (user) {
       setForm((prev) => ({
         ...prev,
+        name: user.name || prev.name,
         plan_type: user.plan_type || prev.plan_type,
         comfort_min: user.comfort_min ?? prev.comfort_min,
         comfort_max: user.comfort_max ?? prev.comfort_max,
+        comfort_min_night: user.comfort_min_night ?? prev.comfort_min_night,
+        comfort_max_night: user.comfort_max_night ?? prev.comfort_max_night,
         room_kwh_per_degC: user.room_kwh_per_degC ?? prev.room_kwh_per_degC,
         ac_cop: user.ac_cop ?? prev.ac_cop,
         postal_code: user.postal_code || prev.postal_code,
@@ -37,6 +44,7 @@ export default function SettingsPage() {
         quiet_hours_start: user.profile?.quiet_hours_start || prev.quiet_hours_start,
         quiet_hours_end: user.profile?.quiet_hours_end || prev.quiet_hours_end,
         heating_source: user.heating_source || prev.heating_source,
+        furnace_filter_last_changed: user.furnace_filter_last_changed || prev.furnace_filter_last_changed,
       }));
     }
   }, [user]);
@@ -63,6 +71,18 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+
+      {/* Name */}
+      <div className="card">
+        <h3 className="card-title">Your Name</h3>
+        <input
+          type="text"
+          value={form.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="What should Goldilocks call you?"
+        />
+      </div>
 
       {/* Electricity Plan */}
       <div className="card">
@@ -92,30 +112,58 @@ export default function SettingsPage() {
       {/* Comfort Zone */}
       <div className="card">
         <h3 className="card-title">Comfort Zone</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm text-gray-600 block mb-1">Minimum (°C)</label>
-            <input
-              type="number"
-              step="0.5"
-              value={form.comfort_min}
-              onChange={(e) => handleChange('comfort_min', parseFloat(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        <div className="mb-3">
+          <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">☀️ Daytime (7am–10pm)</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-gray-600 block mb-1">Minimum (°C)</label>
+              <input
+                type="number"
+                step="0.5"
+                value={form.comfort_min}
+                onChange={(e) => handleChange('comfort_min', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-600 block mb-1">Maximum (°C)</label>
+              <input
+                type="number"
+                step="0.5"
+                value={form.comfort_max}
+                onChange={(e) => handleChange('comfort_max', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
-          <div>
-            <label className="text-sm text-gray-600 block mb-1">Maximum (°C)</label>
-            <input
-              type="number"
-              step="0.5"
-              value={form.comfort_max}
-              onChange={(e) => handleChange('comfort_max', parseFloat(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">🌙 Nighttime (10pm–7am)</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-gray-600 block mb-1">Minimum (°C)</label>
+              <input
+                type="number"
+                step="0.5"
+                value={form.comfort_min_night}
+                onChange={(e) => handleChange('comfort_min_night', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-gray-600 block mb-1">Maximum (°C)</label>
+              <input
+                type="number"
+                step="0.5"
+                value={form.comfort_max_night}
+                onChange={(e) => handleChange('comfort_max_night', parseFloat(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
           </div>
         </div>
         <p className="text-xs text-gray-400 mt-2">
-          The range where you feel comfortable. Default: 20–23°C.
+          Different comfort levels for day and night. Goldilocks automatically switches based on time.
         </p>
       </div>
 
@@ -221,6 +269,23 @@ export default function SettingsPage() {
             <p className="text-xs text-gray-400 mt-1">Helps personalize recommendations</p>
           </div>
         </div>
+      </div>
+
+      {/* Furnace Filter Reminder */}
+      <div className="card">
+        <h3 className="card-title">Furnace Filter Reminder</h3>
+        <div>
+          <label className="text-sm text-gray-600 block mb-1">Last Changed Date</label>
+          <input
+            type="date"
+            value={form.furnace_filter_last_changed}
+            onChange={(e) => handleChange('furnace_filter_last_changed', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+        <p className="text-xs text-gray-400 mt-2">
+          🔧 Goldilocks will remind you every 90 days to replace your furnace filter.
+        </p>
       </div>
 
       {/* Notification Quiet Hours */}

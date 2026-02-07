@@ -155,21 +155,37 @@ app.get('/api/dashboard', async (req, res) => {
       Tin, RHin, Tout, RHout,
       comfort_min: user.comfort_min,
       comfort_max: user.comfort_max,
+      comfort_min_night: user.comfort_min_night,
+      comfort_max_night: user.comfort_max_night,
       price_cents_per_kWh: rate.price_cents_per_kWh,
       periodLabel: rate.periodLabel,
       forecast: weather.forecast,
       moldRiskLevel: moldRisk.risk_level,
     });
 
-    // Cost estimate
-    const target = (user.comfort_min + user.comfort_max) / 2;
+    // Cost estimate — use day/night target
+    const { getComfortBand } = require('./logic/recommendation');
+    const band = getComfortBand({ comfort_min: user.comfort_min, comfort_max: user.comfort_max, comfort_min_night: user.comfort_min_night, comfort_max_night: user.comfort_max_night });
+    const target = (band.min + band.max) / 2;
+    const housingType = profile?.housing_type || 'apartment';
     const costEstimate = estimateCost({
       Tin,
       target,
       price_cents_per_kWh: rate.price_cents_per_kWh,
       kWh_per_degC: user.room_kwh_per_degC,
       ac_cop: user.ac_cop,
+      housing_type: housingType,
     });
+
+    // Furnace filter reminder (every 3 months)
+    let furnaceFilterReminder = null;
+    if (user.furnace_filter_last_changed) {
+      const lastChanged = new Date(user.furnace_filter_last_changed);
+      const daysSince = Math.floor((Date.now() - lastChanged.getTime()) / 86400000);
+      if (daysSince >= 90) {
+        furnaceFilterReminder = { daysSince, message: `🔧 It's been ${daysSince} days since you replaced your furnace filter. Recommended every 90 days.` };
+      }
+    }
 
     // Log recommendation
     db.prepare(`
@@ -192,11 +208,16 @@ app.get('/api/dashboard', async (req, res) => {
     res.json({
       user: {
         id: user.id,
+        name: user.name || '',
         plan_type: user.plan_type,
         comfort_min: user.comfort_min,
         comfort_max: user.comfort_max,
+        comfort_min_night: user.comfort_min_night,
+        comfort_max_night: user.comfort_max_night,
         postal_code: user.postal_code,
         housing_type: profile?.housing_type || 'apartment',
+        onboarded: !!user.onboarded,
+        furnace_filter_last_changed: user.furnace_filter_last_changed || null,
       },
       indoor: {
         temp_C: Tin,
@@ -223,8 +244,12 @@ app.get('/api/dashboard', async (req, res) => {
         confidence: recommendation.confidence,
         reasons: recommendation.reasons,
         text: getRecommendationText(recommendation.state),
+        proactive_tip: recommendation.proactive_tip || null,
+        humidity_tip: recommendation.humidity_tip || null,
+        comfort_period: recommendation.comfort_period || 'day',
       },
       costEstimate,
+      furnaceFilterReminder,
       moldRisk,
       todaySavings: todaySummary || { dollars_saved_est: 0, kwh_saved_est: 0 },
       readingsCount24h: last24h.length,
@@ -306,13 +331,15 @@ app.post('/api/user/preferences', (req, res) => {
 
     const {
       plan_type, comfort_min, comfort_max,
+      comfort_min_night, comfort_max_night,
       room_kwh_per_degC, ac_cop, postal_code, heating_source,
+      name, furnace_filter_last_changed,
       housing_type, floor_level, lifestyle_notes,
       notification_preferences_json, quiet_hours_start, quiet_hours_end,
     } = req.body;
 
     // Update users table
-    if (plan_type || comfort_min || comfort_max || room_kwh_per_degC || ac_cop || postal_code || heating_source) {
+    if (plan_type || comfort_min || comfort_max || room_kwh_per_degC || ac_cop || postal_code || heating_source || comfort_min_night || comfort_max_night || name !== undefined || furnace_filter_last_changed) {
       db.prepare(`
         UPDATE users SET
           plan_type = COALESCE(?, plan_type),
@@ -321,9 +348,14 @@ app.post('/api/user/preferences', (req, res) => {
           room_kwh_per_degC = COALESCE(?, room_kwh_per_degC),
           ac_cop = COALESCE(?, ac_cop),
           postal_code = COALESCE(?, postal_code),
-          heating_source = COALESCE(?, heating_source)
+          heating_source = COALESCE(?, heating_source),
+          comfort_min_night = COALESCE(?, comfort_min_night),
+          comfort_max_night = COALESCE(?, comfort_max_night),
+          name = COALESCE(?, name),
+          furnace_filter_last_changed = COALESCE(?, furnace_filter_last_changed),
+          onboarded = 1
         WHERE id = ?
-      `).run(plan_type, comfort_min, comfort_max, room_kwh_per_degC, ac_cop, postal_code, heating_source, user.id);
+      `).run(plan_type, comfort_min, comfort_max, room_kwh_per_degC, ac_cop, postal_code, heating_source, comfort_min_night, comfort_max_night, name || null, furnace_filter_last_changed, user.id);
     }
 
     // Update profile table

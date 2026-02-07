@@ -3,9 +3,25 @@ export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
   const formatHumidity = (h) => h != null ? `${h.toFixed(0)}%` : 'N/A';
   const formatPressure = (p) => p != null ? `${p.toFixed(0)} hPa` : '—';
 
+  // Delta calculation
+  const hasBoth = indoor?.temp_C != null && outdoor?.temp_C != null;
+  const deltaT = hasBoth ? (indoor.temp_C - outdoor.temp_C).toFixed(1) : null;
+  const deltaSign = deltaT > 0 ? '+' : '';
+
   return (
     <div className="card">
-      <h3 className="card-title">Indoor vs Outdoor</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="card-title mb-0">Indoor vs Outdoor</h3>
+        {deltaT != null && (
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+            Math.abs(deltaT) < 3 ? 'bg-green-100 text-green-700' :
+            Math.abs(deltaT) < 8 ? 'bg-amber-100 text-amber-700' :
+            'bg-red-100 text-red-700'
+          }`}>
+            ΔT {deltaSign}{deltaT}°C
+          </span>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-4">
         {/* Indoor */}
         <div className="bg-blue-50 rounded-lg p-4">
@@ -48,7 +64,9 @@ export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
           <div className="space-y-2">
             <div>
               <p className="text-3xl font-bold text-gray-900">{formatTemp(outdoor?.temp_C)}</p>
-              <p className="text-xs text-gray-500">Temperature</p>
+              {outdoor?.feels_like_C != null && (
+                <p className="text-xs text-gray-500">Feels like {outdoor.feels_like_C.toFixed(1)}°C</p>
+              )}
             </div>
             <div className="flex gap-4">
               <div>
@@ -57,7 +75,9 @@ export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
               </div>
               <div>
                 <p className="text-sm text-gray-600 capitalize">{outdoor?.description || '—'}</p>
-                <p className="text-xs text-gray-500">Conditions</p>
+                <p className="text-xs text-gray-500">
+                  {outdoor?.wind_speed_ms != null ? `💨 ${outdoor.wind_speed_ms.toFixed(1)} m/s` : 'Conditions'}
+                </p>
               </div>
             </div>
           </div>

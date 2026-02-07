@@ -58,6 +58,21 @@ function initSchema() {
     db.exec("ALTER TABLE users ADD COLUMN heating_source TEXT DEFAULT 'gas'");
     console.log('Migrated: added heating_source to users');
   }
+
+  // Migration: add day/night comfort prefs + name + onboarded flag
+  const userMigrations = [
+    { col: 'comfort_min_night', sql: 'ALTER TABLE users ADD COLUMN comfort_min_night REAL DEFAULT 18.0' },
+    { col: 'comfort_max_night', sql: 'ALTER TABLE users ADD COLUMN comfort_max_night REAL DEFAULT 21.0' },
+    { col: 'name', sql: "ALTER TABLE users ADD COLUMN name TEXT DEFAULT ''" },
+    { col: 'onboarded', sql: 'ALTER TABLE users ADD COLUMN onboarded INTEGER DEFAULT 0' },
+    { col: 'furnace_filter_last_changed', sql: "ALTER TABLE users ADD COLUMN furnace_filter_last_changed TEXT DEFAULT ''" },
+  ];
+  for (const m of userMigrations) {
+    try { db.prepare(`SELECT ${m.col} FROM users LIMIT 1`).get(); } catch (e) {
+      db.exec(m.sql);
+      console.log(`Migrated: added ${m.col} to users`);
+    }
+  }
 }
 
 module.exports = { getDb, DB_PATH };
