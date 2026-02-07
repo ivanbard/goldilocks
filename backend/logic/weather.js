@@ -98,8 +98,9 @@ async function fetchWeather(apiKey, postalCode) {
   const { lat, lon, locationName } = await geocodePostalCode(postalCode, apiKey);
 
   try {
-    // Current weather
+    // Current weather (2.5 API — free tier)
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+    console.log('Fetching current weather:', currentUrl.replace(apiKey, '***'));
     const currentRes = await fetch(currentUrl);
     const currentData = await currentRes.json();
 
@@ -109,7 +110,7 @@ async function fetchWeather(apiKey, postalCode) {
       return getMockWeather();
     }
 
-    // 5-day/3-hour forecast
+    // 5-day/3-hour forecast (2.5 API — free tier)
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&cnt=4&appid=${apiKey}`;
     const forecastRes = await fetch(forecastUrl);
     const forecastData = await forecastRes.json();
@@ -131,7 +132,7 @@ async function fetchWeather(apiKey, postalCode) {
         humidity_RH: f.main?.humidity,
         description: f.weather?.[0]?.description || '',
         icon: f.weather?.[0]?.icon || '',
-        pop: f.pop || 0, // probability of precipitation (0-1)
+        pop: f.pop || 0,
       })),
       location: locationName,
       cached: false,
