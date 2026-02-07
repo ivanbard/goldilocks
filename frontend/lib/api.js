@@ -66,4 +66,20 @@ export async function generateSuggestions() {
   return res.json();
 }
 
+export async function sendChatMessage(message) {
+  const res = await fetch(`${API_URL}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  });
+  return res.json();
+}
+
+export async function resetChatSession() {
+  const res = await fetch(`${API_URL}/api/chat/reset`, {
+    method: 'POST',
+  });
+  return res.json();
+}
+
 export { API_URL };

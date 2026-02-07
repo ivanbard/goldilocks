@@ -1,11 +1,13 @@
 /**
- * LLM Suggestions Module — uses OpenRouter to generate personalized advice
- * based on sensor data, recommendations, user profile, and history.
+ * LLM Suggestions Module — uses the official Google Gemini API directly
+ * for personalized smart home advice based on sensor data, recommendations,
+ * user profile, and history.
  */
 
-const fetch = require('node-fetch');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const MODELS = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+const MODEL_NAME = MODELS[0]; // default for exports
 
 /**
  * Build a context-rich prompt from dashboard state
@@ -57,72 +59,66 @@ Return ONLY the JSON array, no other text.`;
 }
 
 /**
- * Call OpenRouter API to generate suggestions
+ * Call Google Gemini API directly to generate suggestions
+ * Tries models in order, falling back on rate limit errors
  */
 async function generateSuggestions(context, apiKey) {
-  if (!apiKey || apiKey === 'your_openrouter_api_key_here') {
-    return { suggestions: [], error: 'No OpenRouter API key configured' };
+  if (!apiKey) {
+    return { suggestions: [], error: 'No Gemini API key configured' };
   }
 
   const prompt = buildPrompt(context);
+  const genAI = new GoogleGenerativeAI(apiKey);
 
-  try {
-    const response = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'http://localhost:3000',
-        'X-Title': 'Goldilocks Kingston',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.0-flash-001',
-        messages: [
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 300,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-      console.error('OpenRouter API error:', data.error);
-      return { suggestions: [], error: data.error.message || 'OpenRouter API error' };
-    }
-
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) {
-      return { suggestions: [], error: 'Empty response from LLM' };
-    }
-
-    // Parse JSON from response (handle potential markdown wrapping)
-    let parsed;
+  for (const modelName of MODELS) {
     try {
-      const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      parsed = JSON.parse(jsonStr);
-    } catch (e) {
-      console.error('Failed to parse LLM response:', content);
-      return { suggestions: [], error: 'Failed to parse LLM response', raw: content };
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 400,
+          responseMimeType: 'application/json',
+        },
+      });
+
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      const content = response.text().trim();
+
+      if (!content) {
+        return { suggestions: [], error: 'Empty response from Gemini' };
+      }
+
+      // Parse JSON from response
+      let parsed;
+      try {
+        const jsonStr = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        parsed = JSON.parse(jsonStr);
+      } catch (e) {
+        console.error('Failed to parse Gemini response:', content);
+        return { suggestions: [], error: 'Failed to parse Gemini response', raw: content };
+      }
+
+      // Validate structure
+      const suggestions = Array.isArray(parsed) ? parsed.filter(s => s.message && s.trigger_type) : [];
+
+      // Token usage from Gemini response metadata
+      const usage = response.usageMetadata || {};
+
+      return {
+        suggestions,
+        model: modelName,
+        tokens_used: (usage.promptTokenCount || 0) + (usage.candidatesTokenCount || 0),
+        prompt_summary: `Dashboard state at ${new Date().toISOString()}`,
+      };
+    } catch (err) {
+      console.error(`Gemini suggestion error (${modelName}):`, err.message);
+      if (modelName === MODELS[MODELS.length - 1]) {
+        return { suggestions: [], error: err.message };
+      }
+      // Try next model
     }
-
-    // Validate structure
-    const suggestions = Array.isArray(parsed) ? parsed.filter(s => s.message && s.trigger_type) : [];
-
-    // Token usage for logging
-    const usage = data.usage || {};
-
-    return {
-      suggestions,
-      model: data.model,
-      tokens_used: (usage.prompt_tokens || 0) + (usage.completion_tokens || 0),
-      prompt_summary: `Dashboard state at ${new Date().toISOString()}`,
-    };
-  } catch (err) {
-    console.error('LLM suggestion error:', err.message);
-    return { suggestions: [], error: err.message };
   }
 }
 
-module.exports = { generateSuggestions, buildPrompt };
+module.exports = { generateSuggestions, buildPrompt, MODEL_NAME };

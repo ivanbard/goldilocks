@@ -2,6 +2,7 @@ import '../styles/globals.css';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
+import ChatPanel from '../components/ChatPanel';
 
 const fetcher = (url) => fetch(url).then(r => r.json());
 
@@ -39,6 +40,7 @@ export default function App({ Component, pageProps }) {
           <nav className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <NavLink href="/">Dashboard</NavLink>
             <NavLink href="/carbon">Carbon</NavLink>
+            <NavLink href="/simulator">Simulator</NavLink>
             <NavLink href="/savings">Savings</NavLink>
             <NavLink href="/settings">Settings</NavLink>
           </nav>
@@ -54,6 +56,9 @@ export default function App({ Component, pageProps }) {
       <footer className="border-t border-gray-200 mt-12 py-4 text-center text-xs text-gray-400">
         Goldilocks {locationName} — QHacks 2026
       </footer>
+
+      {/* Global chat panel */}
+      <ChatPanel />
     </div>
   );
 }

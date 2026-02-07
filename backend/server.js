@@ -11,6 +11,7 @@ const { computeMoldRisk } = require('./logic/moldRisk');
 const { generateSuggestions } = require('./logic/llmSuggestions');
 const { estimateIndoorHumidity } = require('./logic/humidityEstimator');
 const { calculateAvoidedCO2, getEquivalences, getCommunityImpact, getGenerationalProjection, dailyCarbonSavings } = require('./logic/carbonEstimator');
+const { chat: geminiChat, resetChat } = require('./logic/geminiChat');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
@@ -468,9 +469,9 @@ app.get('/api/carbon', (req, res) => {
 // --- POST /api/suggestions/generate — Generate LLM-powered suggestions ---
 app.post('/api/suggestions/generate', async (req, res) => {
   try {
-    const apiKey = process.env.OPENROUTER_API;
-    if (!apiKey || apiKey === 'your_openrouter_api_key_here') {
-      return res.status(400).json({ error: 'OpenRouter API key not configured in .env' });
+    const apiKey = process.env.GEMINI_API;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'Gemini API key not configured in .env' });
     }
 
     const user = db.prepare('SELECT * FROM users LIMIT 1').get();
@@ -590,6 +591,115 @@ app.post('/api/suggestions/generate', async (req, res) => {
 // ============================================================
 // Start server
 // ============================================================
+
+// --- POST /api/chat — Conversational AI chat powered by Gemini ---
+app.post('/api/chat', async (req, res) => {
+  try {
+    const apiKey = process.env.GEMINI_API;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'Gemini API key not configured' });
+    }
+
+    const { message } = req.body;
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const user = db.prepare('SELECT * FROM users LIMIT 1').get();
+    if (!user) return res.status(404).json({ error: 'No user found' });
+
+    const profile = db.prepare('SELECT * FROM user_profile WHERE user_id = ?').get(user.id);
+    const device = db.prepare('SELECT * FROM devices WHERE user_id = ?').get(user.id);
+    const deviceId = device?.device_id || 'demo-device-001';
+
+    // Gather full context
+    const latestReading = db.prepare(
+      'SELECT * FROM readings WHERE device_id = ? ORDER BY ts DESC LIMIT 1'
+    ).get(deviceId);
+
+    const last24h = db.prepare(`
+      SELECT * FROM readings
+      WHERE device_id = ? AND ts >= datetime('now', '-24 hours')
+      ORDER BY ts ASC
+    `).all(deviceId);
+
+    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY, user.postal_code);
+    const rate = getCurrentRate(user.plan_type);
+    const Tin = latestReading?.temp_C ?? 21;
+    let RHin = latestReading?.humidity_RH ?? null;
+    const Tout = weather.current.temp_C;
+    const RHout = weather.current.humidity_RH;
+
+    if (RHin == null && Tout != null && RHout != null && Tin != null) {
+      const est = estimateIndoorHumidity(Tin, Tout, RHout);
+      if (est.humidity_RH != null) RHin = est.humidity_RH;
+    }
+
+    const moldRisk = computeMoldRisk(last24h, 1);
+    const target = (user.comfort_min + user.comfort_max) / 2;
+
+    const recommendation = getRecommendation({
+      Tin, RHin, Tout, RHout,
+      comfort_min: user.comfort_min, comfort_max: user.comfort_max,
+      price_cents_per_kWh: rate.price_cents_per_kWh,
+      periodLabel: rate.periodLabel,
+      forecast: weather.forecast,
+      moldRiskLevel: moldRisk.risk_level,
+    });
+
+    const costEstimate = estimateCost({
+      Tin, target,
+      price_cents_per_kWh: rate.price_cents_per_kWh,
+      kWh_per_degC: user.room_kwh_per_degC,
+      ac_cop: user.ac_cop,
+    });
+
+    const today = new Date().toISOString().split('T')[0];
+    const todaySavings = db.prepare(
+      'SELECT * FROM daily_summary WHERE user_id = ? AND date = ?'
+    ).get(user.id, today);
+
+    // Get carbon data
+    const allSummaries = db.prepare(
+      'SELECT * FROM daily_summary WHERE user_id = ? ORDER BY date ASC'
+    ).all(user.id);
+    const heatingSource = user.heating_source || 'gas';
+    let totalCO2 = 0;
+    allSummaries.forEach(d => { totalCO2 += dailyCarbonSavings(d.kwh_saved_est, heatingSource).co2_saved_g; });
+    const carbon = {
+      total: { co2_saved_kg: Math.round(totalCO2 / 10) / 100, days_tracked: allSummaries.length },
+      today: { co2_saved_g: todaySavings ? dailyCarbonSavings(todaySavings.kwh_saved_est, heatingSource).co2_saved_g : 0 },
+      equivalences: getEquivalences(totalCO2),
+      community: getCommunityImpact({ user_co2_saved_g: totalCO2, days_tracked: allSummaries.length }),
+    };
+
+    const result = await geminiChat(message.trim(), {
+      user, profile,
+      indoor: { temp_C: Tin, humidity_RH: RHin, humidity_estimated: latestReading?.humidity_RH == null, pressure_hPa: latestReading?.pressure_hPa },
+      outdoor: weather.current,
+      weather,
+      electricity: rate,
+      recommendation: { ...recommendation, text: getRecommendationText(recommendation.state) },
+      moldRisk,
+      costEstimate,
+      todaySavings: todaySavings || { dollars_saved_est: 0, kwh_saved_est: 0 },
+      carbon,
+    }, apiKey);
+
+    res.json(result);
+  } catch (err) {
+    console.error('POST /api/chat error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- POST /api/chat/reset — Reset chat session ---
+app.post('/api/chat/reset', (req, res) => {
+  const user = db.prepare('SELECT * FROM users LIMIT 1').get();
+  resetChat(user?.id);
+  res.json({ success: true });
+});
+
 app.listen(PORT, () => {
   console.log(`Goldilocks backend listening on http://localhost:${PORT}`);
 });
