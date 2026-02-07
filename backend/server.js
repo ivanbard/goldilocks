@@ -120,8 +120,8 @@ app.get('/api/dashboard', async (req, res) => {
       ORDER BY ts ASC
     `).all(deviceId);
 
-    // Outdoor weather
-    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY);
+    // Outdoor weather (geocoded from user's postal code)
+    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY, user.postal_code);
 
     // Current electricity rate
     const rate = getCurrentRate(user.plan_type);
@@ -264,7 +264,8 @@ app.get('/api/savings', (req, res) => {
 // --- GET /api/weather — Weather data ---
 app.get('/api/weather', async (req, res) => {
   try {
-    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY);
+    const user = db.prepare('SELECT * FROM users LIMIT 1').get();
+    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY, user?.postal_code);
     res.json(weather);
   } catch (err) {
     console.error('GET /api/weather error:', err);
@@ -412,8 +413,8 @@ app.post('/api/suggestions/generate', async (req, res) => {
       ORDER BY ts ASC
     `).all(deviceId);
 
-    // Weather, rate, indoor values
-    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY);
+    // Weather, rate, indoor values (geocoded from user's postal code)
+    const weather = await fetchWeather(process.env.OPENWEATHERMAP_API_KEY, user.postal_code);
     const rate = getCurrentRate(user.plan_type);
     const Tin = latestReading ? latestReading.temp_C : 21;
     const RHin = latestReading ? latestReading.humidity_RH : null;
