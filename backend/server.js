@@ -14,6 +14,7 @@ const { calculateAvoidedCO2, getEquivalences, getCommunityImpact, getGenerationa
 const { chat: geminiChat, resetChat } = require('./logic/geminiChat');
 const demoSimulator = require('./logic/demoSimulator');
 const conditionMonitor = require('./logic/conditionMonitor');
+const dailySummaryCron = require('./logic/dailySummaryCron');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
@@ -750,4 +751,7 @@ app.listen(PORT, () => {
 
   // Auto-notifications: monitor conditions and alert the user
   conditionMonitor.start();
+
+  // Daily summary: compute real savings/mold stats every hour
+  dailySummaryCron.start();
 });
