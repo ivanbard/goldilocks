@@ -12,6 +12,7 @@ const { generateSuggestions } = require('./logic/llmSuggestions');
 const { estimateIndoorHumidity } = require('./logic/humidityEstimator');
 const { calculateAvoidedCO2, getEquivalences, getCommunityImpact, getGenerationalProjection, dailyCarbonSavings } = require('./logic/carbonEstimator');
 const { chat: geminiChat, resetChat } = require('./logic/geminiChat');
+const demoSimulator = require('./logic/demoSimulator');
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 3001;
@@ -734,4 +735,9 @@ app.post('/api/chat/reset', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Goldilocks backend listening on http://localhost:${PORT}`);
+
+  // Start demo simulator if no real Arduino is connected
+  if (process.env.DEMO_MODE === 'true') {
+    demoSimulator.start();
+  }
 });
