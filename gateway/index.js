@@ -16,7 +16,8 @@ const SERIAL_PORT = process.env.SERIAL_PORT || 'COM3';
 const SERIAL_BAUD = parseInt(process.env.SERIAL_BAUD) || 115200;
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 const DEVICE_ID = process.env.DEVICE_ID || 'demo-device-001';
-const SEND_INTERVAL_MS = 30 * 1000; // 30 seconds
+const SEND_INTERVAL_SEC = parseInt(process.env.SEND_INTERVAL_SEC) || 30;
+const SEND_INTERVAL_MS = SEND_INTERVAL_SEC * 1000;
 
 // Buffer for accumulating readings
 let readingBuffer = [];
