@@ -111,12 +111,15 @@ function computeSummary(dateStr) {
 
 function runUpdate() {
   try {
+    const { getESTDate } = require('./timezone');
+    const estNow = getESTDate();
     // Update today's summary
-    const today = new Date().toISOString().split('T')[0];
+    const today = estNow.toISOString().split('T')[0];
     computeSummary(today);
 
     // Also update yesterday if it hasn't been finalized
-    const yesterday = new Date(Date.now() - 86400_000).toISOString().split('T')[0];
+    const estYesterday = new Date(estNow.getTime() - 86400_000);
+    const yesterday = estYesterday.toISOString().split('T')[0];
     computeSummary(yesterday);
   } catch (err) {
     console.error('[Cron] Daily summary error:', err.message);

@@ -49,7 +49,8 @@ async function checkConditions() {
     // Respect quiet hours
     const profile = db.prepare('SELECT * FROM user_profile WHERE user_id = ?').get(user.id);
     if (profile?.quiet_hours_start && profile?.quiet_hours_end) {
-      const now = new Date();
+      const { getESTDate } = require('./timezone');
+      const now = getESTDate();
       const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       if (hhmm >= profile.quiet_hours_start || hhmm < profile.quiet_hours_end) {
         return; // silent during quiet hours
@@ -162,10 +163,12 @@ async function checkConditions() {
     }
 
     // ── Electricity rate change tip ───────────────────────────
-    const hour = new Date().getHours();
+    const { getESTDate } = require('./timezone');
+    const estNow = getESTDate();
+    const hour = estNow.getHours();
     // Alert at transition hours (7 AM on-peak start, 7 PM off-peak start)
     if (hour === 7 || hour === 19) {
-      const min = new Date().getMinutes();
+      const min = estNow.getMinutes();
       if (min < 5) { // only in first 5 min of the hour
         const recent = db.prepare(`
           SELECT COUNT(*) as n FROM notifications

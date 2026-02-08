@@ -59,7 +59,6 @@ export default function App({ Component, pageProps }) {
           <nav className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <NavLink href="/">Dashboard</NavLink>
             <NavLink href="/carbon">Carbon</NavLink>
-            <NavLink href="/simulator">Simulator</NavLink>
             <NavLink href="/savings">Savings</NavLink>
             <NavLink href="/settings">Settings</NavLink>
           </nav>

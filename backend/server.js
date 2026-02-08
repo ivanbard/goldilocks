@@ -4,6 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const { getDb } = require('./db/init');
 const { getCurrentRate, getFullSchedule } = require('./logic/electricityRates');
+const { getESTDate } = require('./logic/timezone');
 const { fetchWeather, isRainExpected } = require('./logic/weather');
 const { getRecommendation, getRecommendationText } = require('./logic/recommendation');
 const { estimateCost, calculatePeriodSavings } = require('./logic/costSavings');
@@ -209,7 +210,7 @@ app.get('/api/dashboard', async (req, res) => {
     );
 
     // Today's savings from daily_summary
-    const today = new Date().toISOString().split('T')[0];
+    const today = getESTDate().toISOString().split('T')[0];
     const todaySummary = db.prepare(
       'SELECT * FROM daily_summary WHERE user_id = ? AND date = ?'
     ).get(user.id, today);
@@ -278,7 +279,7 @@ app.get('/api/savings', (req, res) => {
     if (!user) return res.status(404).json({ error: 'No user found' });
 
     let dateFilter = '';
-    const today = new Date().toISOString().split('T')[0];
+    const today = getESTDate().toISOString().split('T')[0];
     const monthStart = today.substring(0, 7) + '-01';
 
     if (period === 'today') {
@@ -449,7 +450,7 @@ app.get('/api/carbon', (req, res) => {
     const user = db.prepare('SELECT * FROM users LIMIT 1').get();
     if (!user) return res.status(404).json({ error: 'No user found' });
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getESTDate().toISOString().split('T')[0];
 
     // Get all daily summaries for carbon calculation
     const allSummaries = db.prepare(
@@ -568,7 +569,7 @@ app.post('/api/suggestions/generate', async (req, res) => {
       ac_cop: user.ac_cop,
     });
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getESTDate().toISOString().split('T')[0];
     const todaySavings = db.prepare(
       'SELECT * FROM daily_summary WHERE user_id = ? AND date = ?'
     ).get(user.id, today);
@@ -696,7 +697,7 @@ app.post('/api/chat', async (req, res) => {
       ac_cop: user.ac_cop,
     });
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getESTDate().toISOString().split('T')[0];
     const todaySavings = db.prepare(
       'SELECT * FROM daily_summary WHERE user_id = ? AND date = ?'
     ).get(user.id, today);

@@ -12,7 +12,7 @@ export default function IndoorOutdoorComparison({ indoor, outdoor, location }) {
   const deltaSign = deltaT > 0 ? '+' : '';
 
   return (
-    <div className="card">
+    <div className="card h-full">
       <div className="flex items-center justify-between mb-3">
         <h3 className="card-title mb-0">Indoor vs Outdoor</h3>
         {deltaT != null && (

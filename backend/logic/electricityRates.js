@@ -12,6 +12,8 @@
  *       ULO rates are consistent year-round.
  */
 
+const { getESTDate } = require('./timezone');
+
 // TOU rates (cents per kWh) — effective Nov 1, 2025
 const TOU_RATES = {
   winter: {
@@ -95,7 +97,8 @@ const TIERED_RATES = {
 /**
  * Get the current season based on date
  */
-function getSeason(date = new Date()) {
+function getSeason(date) {
+  if (!date) date = getESTDate();
   const month = date.getMonth() + 1; // 1-12
   // Winter: Nov 1 – Apr 30, Summer: May 1 – Oct 31
   return (month >= 5 && month <= 10) ? 'summer' : 'winter';
@@ -104,7 +107,8 @@ function getSeason(date = new Date()) {
 /**
  * Check if a date is a weekend (Sat/Sun)
  */
-function isWeekend(date = new Date()) {
+function isWeekend(date) {
+  if (!date) date = getESTDate();
   const day = date.getDay();
   return day === 0 || day === 6;
 }
@@ -112,7 +116,8 @@ function isWeekend(date = new Date()) {
 /**
  * Get the current TOU or ULO rate for a given time
  */
-function getTimeOfUseRate(planRates, date = new Date()) {
+function getTimeOfUseRate(planRates, date) {
+  if (!date) date = getESTDate();
   const season = getSeason(date);
   const dayType = isWeekend(date) ? 'weekend' : 'weekday';
   const hour = date.getHours();
@@ -133,10 +138,11 @@ function getTimeOfUseRate(planRates, date = new Date()) {
 /**
  * Get current electricity rate based on plan type
  * @param {string} planType - 'TOU', 'ULO', or 'TIERED'
- * @param {Date} date - current date/time
+ * @param {Date} date - current date/time (defaults to EST)
  * @returns {{ price_cents_per_kWh: number, periodLabel: string, planType: string, season: string }}
  */
-function getCurrentRate(planType = 'TOU', date = new Date()) {
+function getCurrentRate(planType = 'TOU', date) {
+  if (!date) date = getESTDate();
   const season = getSeason(date);
 
   if (planType === 'TOU') {
@@ -170,7 +176,8 @@ function getCurrentRate(planType = 'TOU', date = new Date()) {
 /**
  * Get the full schedule for display purposes
  */
-function getFullSchedule(planType = 'TOU', date = new Date()) {
+function getFullSchedule(planType = 'TOU', date) {
+  if (!date) date = getESTDate();
   const season = getSeason(date);
   if (planType === 'TIERED') {
     return { planType, season, tiers: TIERED_RATES[season] };

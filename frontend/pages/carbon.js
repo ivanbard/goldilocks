@@ -228,18 +228,6 @@ export default function CarbonPage() {
         </div>
       </div>
 
-      {/* Generational Timeline — Golden Age */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-2xl">{CLOCK}</span>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">The Golden Age Legacy</h3>
-            <p className="text-sm text-gray-500">Kingston&apos;s projected impact across generations</p>
-          </div>
-        </div>
-        <GenerationalTimeline data={data?.generational} />
-      </div>
-
       {/* Methodology note */}
       <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-xs text-gray-400">
         <p className="font-medium text-gray-500 mb-1">Methodology</p>
