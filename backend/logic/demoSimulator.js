@@ -1,7 +1,12 @@
 /**
- * Demo Simulator — generates realistic synthetic sensor readings,
- * 30 days of savings / carbon history, and sample notifications
- * when no Arduino is connected (e.g. for Devpost "try it out" link).
+ * Demo Simulator — generates dramatic but realistic synthetic sensor readings
+ * that cycle through different comfort states to showcase all recommendation types.
+ *
+ * Cycles every ~10 minutes through phases:
+ *   1. Too Cold (17–19°C) → triggers USE_HEAT
+ *   2. Comfortable + High Humidity (21°C, 68% RH) → triggers OPEN_WINDOW for mold
+ *   3. Too Hot (25–27°C) → triggers USE_AC or OPEN_WINDOW
+ *   4. Comfortable (21°C, 42% RH) → triggers DO_NOTHING
  *
  * Activate with DEMO_MODE=true in .env
  */
@@ -11,14 +16,22 @@ const { getDb } = require('../db/init');
 const DEVICE_ID = 'demo-device-001';
 const INTERVAL_MS = 30_000; // match real gateway cadence
 
-// --- Tunable params ---
-const BASE_TEMP = 21.2;
-const TEMP_AMPLITUDE = 1.5;
-const TEMP_NOISE = 0.15;
+// Phase duration in minutes (each phase lasts ~2.5 min for a 10-min full cycle)
+const PHASE_DURATION_MS = 2.5 * 60_000;
+
+const PHASES = [
+  // Phase 0: Too Cold — furnace can't keep up, temp dropped
+  { name: 'TOO_COLD', baseTemp: 17.8, tempNoise: 0.6, baseHumidity: 38, humNoise: 3 },
+  // Phase 1: Comfortable but humid — mold risk scenario  
+  { name: 'HUMID', baseTemp: 21.5, tempNoise: 0.3, baseHumidity: 67, humNoise: 3 },
+  // Phase 2: Too Hot — afternoon heat buildup
+  { name: 'TOO_HOT', baseTemp: 25.8, tempNoise: 0.7, baseHumidity: 52, humNoise: 4 },
+  // Phase 3: Comfortable — everything is fine
+  { name: 'COMFORTABLE', baseTemp: 21.2, tempNoise: 0.4, baseHumidity: 42, humNoise: 2 },
+];
+
 const BASE_PRESSURE = 1010;
 const PRESSURE_DRIFT = 4;
-const BASE_HUMIDITY = 45;
-const HUMIDITY_AMPLITUDE = 12;
 
 let pressureWalk = 0;
 let timer = null;
@@ -27,21 +40,35 @@ function noise(scale) {
   return (Math.random() - 0.5) * 2 * scale;
 }
 
+function getCurrentPhase() {
+  const elapsed = Date.now() % (PHASES.length * PHASE_DURATION_MS);
+  const idx = Math.floor(elapsed / PHASE_DURATION_MS);
+  return PHASES[idx];
+}
+
 function generateReading(hoursAgo = 0) {
   const now = Date.now() - hoursAgo * 3600_000;
-  const hourOfDay = new Date(now).getHours() + new Date(now).getMinutes() / 60;
+  
+  // For live readings (hoursAgo ~= 0), use the current phase
+  // For historical seeding, cycle through phases based on time
+  let phase;
+  if (hoursAgo < 0.1) {
+    phase = getCurrentPhase();
+  } else {
+    // Historical: cycle through phases every ~2.5 min of simulated time
+    const elapsed = now % (PHASES.length * PHASE_DURATION_MS);
+    const idx = Math.floor(elapsed / PHASE_DURATION_MS);
+    phase = PHASES[idx];
+  }
 
-  const dailyCycle = Math.sin((hourOfDay - 6) / 24 * 2 * Math.PI) * TEMP_AMPLITUDE * 0.6;
-  const heatingCycle = Math.sin(now / 1800_000) * TEMP_AMPLITUDE * 0.4;
-  const temp = BASE_TEMP + dailyCycle + heatingCycle + noise(TEMP_NOISE);
+  const temp = phase.baseTemp + noise(phase.tempNoise);
 
   pressureWalk += noise(0.3);
   pressureWalk = Math.max(-PRESSURE_DRIFT, Math.min(PRESSURE_DRIFT, pressureWalk));
   const pressure = BASE_PRESSURE + pressureWalk;
 
-  const humOffset = -dailyCycle * 3;
-  const humidity = Math.max(25, Math.min(75,
-    BASE_HUMIDITY + humOffset + noise(2) + Math.sin(now / 3600_000) * HUMIDITY_AMPLITUDE * 0.5
+  const humidity = Math.max(22, Math.min(78,
+    phase.baseHumidity + noise(phase.humNoise)
   ));
 
   return {

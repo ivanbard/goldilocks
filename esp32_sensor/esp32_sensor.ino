@@ -27,15 +27,12 @@
 #include <DHT.h>
 
 // ─── Configuration ───────────────────────────────────────────
-// TODO: Replace with your WiFi credentials
-const char* WIFI_SSID     = "Your_WiFi_SSID";
-const char* WIFI_PASSWORD = "Your_WiFi_Password";
+const char* WIFI_SSID     = "bardiphone";
+const char* WIFI_PASSWORD = "notnotnot";
 
-// TODO: Replace with your backend URL
 // For local dev, use your computer's local IP (not localhost — ESP32 is a separate device)
-// Find your local IP: Windows (ipconfig), Mac/Linux (ifconfig)
-// For deployed backend, use the Railway/Vercel URL
-const char* BACKEND_URL   = "http://192.168.1.100:3001/api/readings";
+// For deployed backend, use the Railway URL
+const char* BACKEND_URL   = "http://172.20.10.7:3001/api/readings";
 
 const char* DEVICE_ID     = "esp32-sensor-001";
 const int   SEND_INTERVAL = 30000; // 30 seconds
