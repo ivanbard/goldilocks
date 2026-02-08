@@ -67,6 +67,9 @@ export default function Dashboard() {
         <MoldRiskModule moldRisk={moldRisk} />
       </div>
 
+      {/* Smart Suggestions */}
+      <NotificationsPanel />
+
       {/* Carbon Impact Widget */}
       <CarbonWidget />
 
@@ -98,9 +101,6 @@ export default function Dashboard() {
           )}
         </div>
       )}
-
-      {/* Notifications */}
-      <NotificationsPanel />
 
       {/* Status bar */}
       <div className="flex items-center justify-between text-xs text-gray-400 px-1">

@@ -1,72 +1,79 @@
 /**
- * Ontario Electricity Rate Tables (OEB 2025/2026)
+ * Ontario Electricity Rate Tables — Utilities Kingston (OEB Nov 1, 2025)
+ * Source: Utilities Kingston website
  * Supports: TOU, ULO, Tiered
  * 
  * Seasons:
  *   Winter: Nov 1 – Apr 30
  *   Summer: May 1 – Oct 31
+ *
+ * Note: TOU rates (¢/kWh) are the same year-round; only the
+ *       peak/mid-peak TIME WINDOWS swap between seasons.
+ *       ULO rates are consistent year-round.
  */
 
-// TOU rates (cents per kWh)
+// TOU rates (cents per kWh) — effective Nov 1, 2025
 const TOU_RATES = {
   winter: {
     // Winter: Nov 1 – Apr 30
-    // Weekdays
+    // Peak demand shifts to morning & early evening (heating)
     weekday: [
-      { start: 0,  end: 7,  rate: 8.7,  label: 'Off-Peak' },
-      { start: 7,  end: 11, rate: 12.2, label: 'Mid-Peak' },
-      { start: 11, end: 17, rate: 17.0, label: 'On-Peak' },
-      { start: 17, end: 19, rate: 12.2, label: 'Mid-Peak' },
-      { start: 19, end: 24, rate: 8.7,  label: 'Off-Peak' },
+      { start: 0,  end: 7,  rate: 9.8,  label: 'Off-Peak' },
+      { start: 7,  end: 11, rate: 20.3, label: 'On-Peak' },
+      { start: 11, end: 17, rate: 15.7, label: 'Mid-Peak' },
+      { start: 17, end: 19, rate: 20.3, label: 'On-Peak' },
+      { start: 19, end: 24, rate: 9.8,  label: 'Off-Peak' },
     ],
     // Weekends & holidays: all off-peak
     weekend: [
-      { start: 0, end: 24, rate: 8.7, label: 'Off-Peak' },
+      { start: 0, end: 24, rate: 9.8, label: 'Off-Peak' },
     ],
   },
   summer: {
     // Summer: May 1 – Oct 31
+    // Peak demand shifts to midday (cooling/AC)
     weekday: [
-      { start: 0,  end: 7,  rate: 8.7,  label: 'Off-Peak' },
-      { start: 7,  end: 11, rate: 12.2, label: 'Mid-Peak' },
-      { start: 11, end: 17, rate: 17.0, label: 'On-Peak' },
-      { start: 17, end: 19, rate: 12.2, label: 'Mid-Peak' },
-      { start: 19, end: 24, rate: 8.7,  label: 'Off-Peak' },
+      { start: 0,  end: 7,  rate: 9.8,  label: 'Off-Peak' },
+      { start: 7,  end: 11, rate: 15.7, label: 'Mid-Peak' },
+      { start: 11, end: 17, rate: 20.3, label: 'On-Peak' },
+      { start: 17, end: 19, rate: 15.7, label: 'Mid-Peak' },
+      { start: 19, end: 24, rate: 9.8,  label: 'Off-Peak' },
     ],
     weekend: [
-      { start: 0, end: 24, rate: 8.7, label: 'Off-Peak' },
+      { start: 0, end: 24, rate: 9.8, label: 'Off-Peak' },
     ],
   },
 };
 
 // ULO rates (cents per kWh) — Ultra-Low Overnight
+// Consistent rates year-round per Utilities Kingston
 const ULO_RATES = {
   winter: {
     weekday: [
-      { start: 0,  end: 7,  rate: 2.8,  label: 'Ultra-Low Overnight' },
-      { start: 7,  end: 11, rate: 12.2, label: 'Mid-Peak' },
-      { start: 11, end: 17, rate: 24.2, label: 'On-Peak' },
-      { start: 17, end: 19, rate: 12.2, label: 'Mid-Peak' },
-      { start: 19, end: 24, rate: 8.7,  label: 'Off-Peak' },
+      { start: 0,  end: 7,  rate: 3.9,  label: 'Ultra-Low Overnight' },
+      { start: 7,  end: 16, rate: 15.7, label: 'Mid-Peak' },
+      { start: 16, end: 21, rate: 39.1, label: 'On-Peak' },
+      { start: 21, end: 23, rate: 15.7, label: 'Mid-Peak' },
+      { start: 23, end: 24, rate: 3.9,  label: 'Ultra-Low Overnight' },
     ],
     weekend: [
-      { start: 0,  end: 7,  rate: 2.8,  label: 'Ultra-Low Overnight' },
-      { start: 7,  end: 19, rate: 8.7,  label: 'Weekend Off-Peak' },
-      { start: 19, end: 24, rate: 8.7,  label: 'Off-Peak' },
+      { start: 0,  end: 7,  rate: 3.9,  label: 'Ultra-Low Overnight' },
+      { start: 7,  end: 23, rate: 9.8,  label: 'Weekend Off-Peak' },
+      { start: 23, end: 24, rate: 3.9,  label: 'Ultra-Low Overnight' },
     ],
   },
   summer: {
     weekday: [
-      { start: 0,  end: 7,  rate: 2.8,  label: 'Ultra-Low Overnight' },
-      { start: 7,  end: 11, rate: 12.2, label: 'Mid-Peak' },
-      { start: 11, end: 17, rate: 24.2, label: 'On-Peak' },
-      { start: 17, end: 19, rate: 12.2, label: 'Mid-Peak' },
-      { start: 19, end: 24, rate: 8.7,  label: 'Off-Peak' },
+      { start: 0,  end: 7,  rate: 3.9,  label: 'Ultra-Low Overnight' },
+      { start: 7,  end: 16, rate: 15.7, label: 'Mid-Peak' },
+      { start: 16, end: 21, rate: 39.1, label: 'On-Peak' },
+      { start: 21, end: 23, rate: 15.7, label: 'Mid-Peak' },
+      { start: 23, end: 24, rate: 3.9,  label: 'Ultra-Low Overnight' },
     ],
     weekend: [
-      { start: 0,  end: 7,  rate: 2.8,  label: 'Ultra-Low Overnight' },
-      { start: 7,  end: 19, rate: 8.7,  label: 'Weekend Off-Peak' },
-      { start: 19, end: 24, rate: 8.7,  label: 'Off-Peak' },
+      { start: 0,  end: 7,  rate: 3.9,  label: 'Ultra-Low Overnight' },
+      { start: 7,  end: 23, rate: 9.8,  label: 'Weekend Off-Peak' },
+      { start: 23, end: 24, rate: 3.9,  label: 'Ultra-Low Overnight' },
     ],
   },
 };
